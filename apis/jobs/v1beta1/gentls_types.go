@@ -27,6 +27,7 @@ type GenTLSStatus struct {
 }
 
 //+genclient
+//+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
@@ -40,6 +41,7 @@ type GenTLS struct {
 }
 
 //+kubebuilder:object:root=true
+//+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // GenTLSList contains a list of GenTLS
 type GenTLSList struct {

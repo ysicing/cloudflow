@@ -27,6 +27,7 @@ type InitNasStatus struct {
 }
 
 //+genclient
+//+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
@@ -40,6 +41,7 @@ type InitNas struct {
 }
 
 //+kubebuilder:object:root=true
+//+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // InitNasList contains a list of InitNas
 type InitNasList struct {
