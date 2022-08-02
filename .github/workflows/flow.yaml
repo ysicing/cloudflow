@@ -32,8 +32,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
+          key: ${{ runner.os }}-go
+          restore-keys: ${{ runner.os }}-go
       - name: Install GoTools
         run: |
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2
@@ -45,19 +45,13 @@ jobs:
           make local
       - uses: peter-evans/create-pull-request@v4
         with:
-          title: 'deploy: updated deploy yaml'
-          commit-message: 'docs: updated deploy'
+          title: 'feat(update): updated deploy yaml'
+          commit-message: 'update deploy yaml'
           branch: create-pull-request/deploy
           signoff: true
       - name: Install CloudFlow Operator
         run: |
           kubectl create namespace cce-system
           kubectl apply -f hack/deploy/deploy.yaml
-      - name: Sleep for 60 seconds
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '60s'
-      - name: Check Status
-        run: |
           kubectl get pods -n cce-system
 
