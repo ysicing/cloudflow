@@ -1,0 +1,14 @@
+# AGPL License
+# Copyright 2022 ysicing(i@ysicing.me).
+
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM ysicing/debian
+
+WORKDIR /
+
+COPY bin/cloudflow .
+
+USER 65532:65532
+
+ENTRYPOINT ["/cloudflow"]

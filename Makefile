@@ -83,14 +83,18 @@ test: manifests generate fmt vet envtest ## Run tests.
 build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
+.PHONY: build-linux
+build-linux: generate fmt vet ## Build linux manager binary.
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/cloudflow main.go
+
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
-docker-build: ## Build docker image with the manager.
+docker-build: build-linux ## Build docker image with the manager.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:${IMG_VERSION}
-	docker build -t ${IMG}:${IMG_VERSION} .
+	docker build -t ${IMG}:${IMG_VERSION} -f Dockerfile.simple .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
