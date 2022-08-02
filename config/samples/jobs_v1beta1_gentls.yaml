@@ -1,0 +1,6 @@
+apiVersion: jobs.ysicing.me/v1beta1
+kind: GenTLS
+metadata:
+  name: gentls-sample
+spec:
+  # TODO(user): Add fields here

@@ -1,0 +1,6 @@
+apiVersion: jobs.ysicing.me/v1beta1
+kind: InitNas
+metadata:
+  name: initnas-sample
+spec:
+  # TODO(user): Add fields here

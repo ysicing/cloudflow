@@ -1,0 +1,11 @@
+resources:
+- manager.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: controller
+  newName: ghcr.io/ysicing/cloudflow
+  newTag: 0.0.1-20220802-unknown

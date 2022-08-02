@@ -1,0 +1,20 @@
+# permissions for end users to view webs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: web-viewer-role
+rules:
+- apiGroups:
+  - apps.ysicing.me
+  resources:
+  - webs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apps.ysicing.me
+  resources:
+  - webs/status
+  verbs:
+  - get

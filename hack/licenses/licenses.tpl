@@ -1,0 +1,2 @@
+AGPL License
+Copyright 2022 ysicing(i@ysicing.me).

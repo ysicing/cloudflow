@@ -1,0 +1,6 @@
+apiVersion: apps.ysicing.me/v1beta1
+kind: Web
+metadata:
+  name: web-sample
+spec:
+  # TODO(user): Add fields here
