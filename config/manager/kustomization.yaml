@@ -8,4 +8,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: ghcr.io/ysicing/cloudflow
-  newTag: 0.0.1-20220802-376c1a9
+  newTag: 0.0.1-20220802-053eae0
