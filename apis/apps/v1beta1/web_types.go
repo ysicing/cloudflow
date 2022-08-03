@@ -17,13 +17,50 @@ type WebSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Web. Edit web_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Image           string  `json:"image"`
+	ImagePullPolicy string  `json:"imagePullPolicy,omitempty"`
+	Replicas        int32   `json:"replicas,omitempty"`
+	RestartPolicy   string  `json:"restartPolicy,omitempty"`
+	Volume          Volume  `json:"volume,omitempty"`
+	Service         Service `json:"service,omitempty"`
+}
+
+type Volume struct {
+	Name       string        `json:"name"`
+	Type       string        `json:"type"`
+	Path       string        `json:"path,omitempty"`
+	MountPaths []VolumeMount `json:"mountPaths"`
+}
+
+type VolumeMount struct {
+	Name      string `json:"name"`
+	MountPath string `json:"mountPath"`
+	SubPath   string `json:"subPath,omitempty"`
+}
+
+type Service struct {
+	Type  string        `json:"type,omitempty"`
+	Ports []ServicePort `json:"ports"`
+}
+
+type ServicePort struct {
+	Name     string         `json:"name,omitempty"`
+	Port     int32          `json:"port"`
+	Protocol string         `json:"protocol,omitempty"`
+	Ingress  ServiceIngress `json:"ingress,omitempty"`
+}
+
+type ServiceIngress struct {
+	Class    string `json:"class,omitempty"`
+	Hostname string `json:"hostname"`
+	TLSName  string `json:"tlsName,omitempty"`
 }
 
 // WebStatus defines the observed state of Web
 type WebStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Ready bool `json:"ready"`
 }
 
 //+genclient

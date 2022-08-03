@@ -35,13 +35,89 @@ spec:
           spec:
             description: WebSpec defines the desired state of Web
             properties:
-              foo:
+              image:
                 description: Foo is an example field of Web. Edit web_types.go to
                   remove/update
                 type: string
+              imagePullPolicy:
+                type: string
+              replicas:
+                format: int32
+                type: integer
+              restartPolicy:
+                type: string
+              service:
+                properties:
+                  ports:
+                    items:
+                      properties:
+                        ingress:
+                          properties:
+                            class:
+                              type: string
+                            hostname:
+                              type: string
+                            tlsName:
+                              type: string
+                          required:
+                          - hostname
+                          type: object
+                        name:
+                          type: string
+                        port:
+                          format: int32
+                          type: integer
+                        protocol:
+                          type: string
+                      required:
+                      - port
+                      type: object
+                    type: array
+                  type:
+                    type: string
+                required:
+                - ports
+                type: object
+              volume:
+                properties:
+                  mountPaths:
+                    items:
+                      properties:
+                        mountPath:
+                          type: string
+                        name:
+                          type: string
+                        subPath:
+                          type: string
+                      required:
+                      - mountPath
+                      - name
+                      type: object
+                    type: array
+                  name:
+                    type: string
+                  path:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - mountPaths
+                - name
+                - type
+                type: object
+            required:
+            - image
             type: object
           status:
             description: WebStatus defines the observed state of Web
+            properties:
+              ready:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                type: boolean
+            required:
+            - ready
             type: object
         type: object
     served: true
