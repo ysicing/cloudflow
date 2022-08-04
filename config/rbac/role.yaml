@@ -83,3 +83,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - network.ysicing.me
+  resources:
+  - clusterendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - network.ysicing.me
+  resources:
+  - clusterendpoints/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - network.ysicing.me
+  resources:
+  - clusterendpoints/status
+  verbs:
+  - get
+  - patch
+  - update

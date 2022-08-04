@@ -4,6 +4,7 @@
 package controllers
 
 import (
+	clusterendpoint "github.com/ysicing/cloudflow/pkg/controllers/clusterendpoint"
 	gentlsjob "github.com/ysicing/cloudflow/pkg/controllers/gentls"
 	initnasjob "github.com/ysicing/cloudflow/pkg/controllers/initnas"
 	webapp "github.com/ysicing/cloudflow/pkg/controllers/web"
@@ -15,9 +16,10 @@ import (
 var controllerAddFuncs []func(manager.Manager) error
 
 func init() {
-	controllerAddFuncs = append(controllerAddFuncs, webapp.Add)
+	controllerAddFuncs = append(controllerAddFuncs, clusterendpoint.Add)
 	controllerAddFuncs = append(controllerAddFuncs, gentlsjob.Add)
 	controllerAddFuncs = append(controllerAddFuncs, initnasjob.Add)
+	controllerAddFuncs = append(controllerAddFuncs, webapp.Add)
 }
 
 func SetupWithManager(m manager.Manager) error {

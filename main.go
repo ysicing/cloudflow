@@ -25,8 +25,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"github.com/spf13/pflag"
+
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
 	jobsv1beta1 "github.com/ysicing/cloudflow/apis/jobs/v1beta1"
+	networkv1beta1 "github.com/ysicing/cloudflow/apis/network/v1beta1"
 	"github.com/ysicing/cloudflow/pkg/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -44,6 +46,7 @@ func init() {
 
 	utilruntime.Must(appsv1beta1.AddToScheme(scheme))
 	utilruntime.Must(jobsv1beta1.AddToScheme(scheme))
+	utilruntime.Must(networkv1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

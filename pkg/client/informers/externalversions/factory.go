@@ -16,6 +16,7 @@ import (
 	apps "github.com/ysicing/cloudflow/pkg/client/informers/externalversions/apps"
 	internalinterfaces "github.com/ysicing/cloudflow/pkg/client/informers/externalversions/internalinterfaces"
 	jobs "github.com/ysicing/cloudflow/pkg/client/informers/externalversions/jobs"
+	network "github.com/ysicing/cloudflow/pkg/client/informers/externalversions/network"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -164,6 +165,7 @@ type SharedInformerFactory interface {
 
 	Apps() apps.Interface
 	Jobs() jobs.Interface
+	Network() network.Interface
 }
 
 func (f *sharedInformerFactory) Apps() apps.Interface {
@@ -172,4 +174,8 @@ func (f *sharedInformerFactory) Apps() apps.Interface {
 
 func (f *sharedInformerFactory) Jobs() jobs.Interface {
 	return jobs.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Network() network.Interface {
+	return network.New(f, f.namespace, f.tweakListOptions)
 }

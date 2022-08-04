@@ -13,6 +13,7 @@ import (
 
 	appsv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/apps/v1beta1"
 	jobsv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/jobs/v1beta1"
+	networkv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/network/v1beta1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -22,14 +23,16 @@ type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	AppsV1beta1() appsv1beta1.AppsV1beta1Interface
 	JobsV1beta1() jobsv1beta1.JobsV1beta1Interface
+	NetworkV1beta1() networkv1beta1.NetworkV1beta1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	appsV1beta1 *appsv1beta1.AppsV1beta1Client
-	jobsV1beta1 *jobsv1beta1.JobsV1beta1Client
+	appsV1beta1    *appsv1beta1.AppsV1beta1Client
+	jobsV1beta1    *jobsv1beta1.JobsV1beta1Client
+	networkV1beta1 *networkv1beta1.NetworkV1beta1Client
 }
 
 // AppsV1beta1 retrieves the AppsV1beta1Client
@@ -40,6 +43,11 @@ func (c *Clientset) AppsV1beta1() appsv1beta1.AppsV1beta1Interface {
 // JobsV1beta1 retrieves the JobsV1beta1Client
 func (c *Clientset) JobsV1beta1() jobsv1beta1.JobsV1beta1Interface {
 	return c.jobsV1beta1
+}
+
+// NetworkV1beta1 retrieves the NetworkV1beta1Client
+func (c *Clientset) NetworkV1beta1() networkv1beta1.NetworkV1beta1Interface {
+	return c.networkV1beta1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -94,6 +102,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 	if err != nil {
 		return nil, err
 	}
+	cs.networkV1beta1, err = networkv1beta1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
@@ -117,6 +129,7 @@ func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.appsV1beta1 = appsv1beta1.New(c)
 	cs.jobsV1beta1 = jobsv1beta1.New(c)
+	cs.networkV1beta1 = networkv1beta1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

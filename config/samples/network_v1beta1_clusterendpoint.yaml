@@ -1,0 +1,6 @@
+apiVersion: network.ysicing.me/v1beta1
+kind: ClusterEndpoint
+metadata:
+  name: clusterendpoint-sample
+spec:
+  # TODO(user): Add fields here

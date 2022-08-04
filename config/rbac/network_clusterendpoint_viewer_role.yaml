@@ -1,0 +1,20 @@
+# permissions for end users to view clusterendpoints.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clusterendpoint-viewer-role
+rules:
+- apiGroups:
+  - network.ysicing.me
+  resources:
+  - clusterendpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - network.ysicing.me
+  resources:
+  - clusterendpoints/status
+  verbs:
+  - get

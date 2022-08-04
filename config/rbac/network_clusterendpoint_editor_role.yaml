@@ -1,0 +1,24 @@
+# permissions for end users to edit clusterendpoints.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clusterendpoint-editor-role
+rules:
+- apiGroups:
+  - network.ysicing.me
+  resources:
+  - clusterendpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - network.ysicing.me
+  resources:
+  - clusterendpoints/status
+  verbs:
+  - get

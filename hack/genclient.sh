@@ -14,7 +14,7 @@ cp -r ./{apis,hack,vendor,go.mod} "${TMP_DIR}"/src/github.com/ysicing/cloudflow
 
 (cd "${TMP_DIR}"/src/github.com/ysicing/cloudflow; \
     GOPATH=${TMP_DIR} GO111MODULE=off /bin/bash vendor/k8s.io/code-generator/generate-groups.sh all \
-    github.com/ysicing/cloudflow/pkg/client github.com/ysicing/cloudflow/apis "apps:v1beta1 jobs:v1beta1" -h ./hack/boilerplate.go.txt ;
+    github.com/ysicing/cloudflow/pkg/client github.com/ysicing/cloudflow/apis "apps:v1beta1 jobs:v1beta1 network:v1beta1" -h ./hack/boilerplate.go.txt ;
     )
 
 rm -rf ./pkg/client

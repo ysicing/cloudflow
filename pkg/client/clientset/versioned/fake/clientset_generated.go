@@ -13,6 +13,8 @@ import (
 	fakeappsv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/apps/v1beta1/fake"
 	jobsv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/jobs/v1beta1"
 	fakejobsv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/jobs/v1beta1/fake"
+	networkv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/network/v1beta1"
+	fakenetworkv1beta1 "github.com/ysicing/cloudflow/pkg/client/clientset/versioned/typed/network/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -78,4 +80,9 @@ func (c *Clientset) AppsV1beta1() appsv1beta1.AppsV1beta1Interface {
 // JobsV1beta1 retrieves the JobsV1beta1Client
 func (c *Clientset) JobsV1beta1() jobsv1beta1.JobsV1beta1Interface {
 	return &fakejobsv1beta1.FakeJobsV1beta1{Fake: &c.Fake}
+}
+
+// NetworkV1beta1 retrieves the NetworkV1beta1Client
+func (c *Clientset) NetworkV1beta1() networkv1beta1.NetworkV1beta1Interface {
+	return &fakenetworkv1beta1.FakeNetworkV1beta1{Fake: &c.Fake}
 }
