@@ -42,6 +42,35 @@ spec:
               ports:
                 items:
                   properties:
+                    httpGet:
+                      description: HTTPGet specifies the http request to perform.
+                      properties:
+                        httpHeaders:
+                          description: Custom headers to set in the request. HTTP
+                            allows repeated headers.
+                          items:
+                            description: HTTPHeader describes a custom header to be
+                              used in HTTP probes
+                            properties:
+                              name:
+                                description: The header field name
+                                type: string
+                              value:
+                                description: The header field value
+                                type: string
+                            required:
+                            - name
+                            - value
+                            type: object
+                          type: array
+                        path:
+                          description: Path to access on the HTTP server.
+                          type: string
+                        scheme:
+                          description: Scheme to use for connecting to the host. Defaults
+                            to HTTP.
+                          type: string
+                      type: object
                     port:
                       description: The port that will be exposed by this service.
                       format: int32
@@ -51,12 +80,35 @@ spec:
                       description: The IP protocol for this port. Supports "TCP",
                         "UDP", and "SCTP". Default is TCP.
                       type: string
+                    tcpSocket:
+                      description: TCPSocket specifies an action involving a TCP port.
+                        TCP hooks not yet supported
+                      properties:
+                        enable:
+                          type: boolean
+                      required:
+                      - enable
+                      type: object
                     timeoutSeconds:
                       description: 'Number of seconds after which the probe times
                         out. Defaults to 1 second. Minimum value is 1. More info:
                         https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes'
                       format: int32
                       type: integer
+                    udpSocket:
+                      description: UDPSocketAction specifies an action involving a
+                        UDP port. UDP hooks not yet supported
+                      properties:
+                        data:
+                          description: UDP test data
+                          items:
+                            type: integer
+                          type: array
+                        enable:
+                          type: boolean
+                      required:
+                      - enable
+                      type: object
                   required:
                   - port
                   type: object

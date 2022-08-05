@@ -14,6 +14,8 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type ServicePort struct {
+	// The action taken to determine the health of a container
+	Handler `json:",inline" protobuf:"bytes,1,opt,name=handler"`
 	// The IP protocol for this port. Supports "TCP", "UDP", and "SCTP".
 	// Default is TCP.
 	// +optional
@@ -25,6 +27,56 @@ type ServicePort struct {
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 	// +optional
 	TimeoutSeconds int32 `json:"timeoutSeconds,omitempty"`
+}
+
+// TCPSocketAction describes an action based on opening a socket
+type TCPSocketAction struct {
+	Enable bool `json:"enable" protobuf:"bytes,1,opt,name=enable"`
+}
+
+// UDPSocketAction describes an action based on opening a socket
+type UDPSocketAction struct {
+	Enable bool `json:"enable" protobuf:"bytes,1,opt,name=enable"`
+	// UDP test data
+	// +optional
+	Data []uint8 `json:"data,omitempty" protobuf:"varint,2,rep,name=data"`
+}
+
+func Int8ArrToByteArr(data []uint8) []byte {
+	r := make([]byte, len(data))
+	for i, d := range data {
+		r[i] = d
+	}
+	return r
+}
+
+// HTTPGetAction describes an action based on HTTP Get requests.
+type HTTPGetAction struct {
+	// Path to access on the HTTP server.
+	// +optional
+	Path string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
+	// Scheme to use for connecting to the host.
+	// Defaults to HTTP.
+	// +optional
+	Scheme v1.URIScheme `json:"scheme,omitempty" protobuf:"bytes,4,opt,name=scheme,casttype=URIScheme"`
+	// Custom headers to set in the request. HTTP allows repeated headers.
+	// +optional
+	HTTPHeaders []v1.HTTPHeader `json:"httpHeaders,omitempty" protobuf:"bytes,5,rep,name=httpHeaders"`
+}
+
+// Handler defines a specific action that should be taken
+type Handler struct {
+	// HTTPGet specifies the http request to perform.
+	// +optional
+	HTTPGet *HTTPGetAction `json:"httpGet,omitempty" protobuf:"bytes,2,opt,name=httpGet"`
+	// TCPSocket specifies an action involving a TCP port.
+	// TCP hooks not yet supported
+	// +optional
+	TCPSocket *TCPSocketAction `json:"tcpSocket,omitempty" protobuf:"bytes,3,opt,name=tcpSocket"`
+	// UDPSocketAction specifies an action involving a UDP port.
+	// UDP hooks not yet supported
+	// +optional
+	UDPSocket *UDPSocketAction `json:"udpSocket,omitempty" protobuf:"bytes,4,opt,name=udpSocket"`
 }
 
 // ClusterEndpointSpec defines the desired state of ClusterEndpoint

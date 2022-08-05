@@ -45,11 +45,11 @@ help: ## Display this help.
 ##@ Development
 
 .PHONY: manifests
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+manifests: ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: fmt
@@ -85,7 +85,23 @@ build: generate fmt vet ## Build manager binary.
 
 .PHONY: build-linux
 build-linux: generate fmt vet ## Build linux manager binary.
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/cloudflow main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/cloudflow  -ldflags   "-w -s \
+							-X 'github.com/ysicing/cloudflow/version.Version=${VERSION}' \
+							-X 'github.com/ysicing/cloudflow/version.BuildDate=${BUILD_DATE}' \
+							-X 'github.com/ysicing/cloudflow/version.GitCommitHash=${COMMIT_SHA1}' \
+							-X 'k8s.io/client-go/pkg/version.gitVersion=${VERSION}' \
+							-X 'k8s.io/client-go/pkg/version.gitCommit=${COMMIT_SHA1}' \
+							-X 'k8s.io/client-go/pkg/version.gitTreeState=dirty' \
+							-X 'k8s.io/client-go/pkg/version.buildDate=${BUILD_DATE}' \
+							-X 'k8s.io/client-go/pkg/version.gitMajor=1' \
+							-X 'k8s.io/client-go/pkg/version.gitMinor=23' \
+							-X 'k8s.io/component-base/version.gitVersion=${VERSION}' \
+							-X 'k8s.io/component-base/version.gitCommit=${COMMIT_SHA1}' \
+							-X 'k8s.io/component-base/version.gitTreeState=dirty' \
+							-X 'k8s.io/component-base/version.gitMajor=1' \
+							-X 'k8s.io/component-base/version.gitMinor=23' \
+							-X 'k8s.io/component-base/version.buildDate=${BUILD_DATE}'" \
+							main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -110,15 +126,15 @@ ifndef ignore-not-found
 endif
 
 .PHONY: install
-install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+install: manifests ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | kubectl apply --kubeconfig ${KUBECFG} -f -
 
 .PHONY: uninstall
-uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+uninstall: manifests ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | kubectl delete --kubeconfig ${KUBECFG} --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: manifests ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:${IMG_VERSION}
 	$(KUSTOMIZE) build config/default | kubectl apply --kubeconfig ${KUBECFG} -f -
 
@@ -131,10 +147,10 @@ genclient: ## Gen Client Code
 	hack/genclient.sh
 
 .PHONY: local
-local: manifests kustomize docker ## Run local manager.
+local: manifests docker ## Run local manager.
 	$(KUSTOMIZE) build config/default > hack/deploy/deploy.yaml
 
-local-crd: manifests kustomize ## gen crd
+local-crd: manifests ## gen crd
 	$(KUSTOMIZE) build config/crd > hack/deploy/crd.yaml
 
 ##@ Build Dependencies

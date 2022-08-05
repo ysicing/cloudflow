@@ -20,6 +20,8 @@ COPY apis/ apis/
 
 COPY pkg/ pkg/
 
+COPY version/ version/
+
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o cloudflow main.go
 
