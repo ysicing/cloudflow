@@ -6,16 +6,24 @@ package web
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
+	"github.com/ergoapi/util/exmap"
+	"github.com/ergoapi/util/ptr"
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
 	utilclient "github.com/ysicing/cloudflow/pkg/util/client"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -106,6 +114,7 @@ type WebReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
 func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, retErr error) {
+	ctx = context.WithValue(ctx, "request", req)
 	startTime := time.Now()
 	defer func() {
 		if retErr == nil {
@@ -120,7 +129,7 @@ func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	}()
 	// Fetch the Web instance
 	instance := &appsv1beta1.Web{}
-	err := r.Get(context.TODO(), req.NamespacedName, instance)
+	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, err
@@ -128,39 +137,278 @@ func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		instance = nil
 	}
 	if instance == nil || instance.DeletionTimestamp != nil {
-		klog.V(3).Infof("Web %s has been deleted.", req)
+		klog.Infof("Web %s has been deleted.", req)
 		return ctrl.Result{}, nil
 	}
 	klog.Infof("parse web %s", req)
 	deployList := &appsv1.DeploymentList{}
-	err = r.List(ctx, deployList, &client.ListOptions{Namespace: instance.GetNamespace()})
+	err = r.Client.List(ctx, deployList, &client.ListOptions{Namespace: instance.GetNamespace()})
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 	if len(deployList.Items) == 0 {
 		klog.Infof("%s not found deploy, create it", req)
-		if err = r.createDeploy(instance); err != nil {
+		if err = r.createDeploy(ctx, instance); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
 		klog.Infof("%s check deploy, will update", req)
-		if err = r.updateDeploy(instance); err != nil {
+		if err = r.updateDeploy(ctx, instance); err != nil {
 			return ctrl.Result{}, err
 		}
+	}
+	if err := r.syncService(ctx, instance); err != nil {
+		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
 }
 
-func (r *WebReconciler) createDeploy(web *appsv1beta1.Web) error {
-	klog.Info("create deploy")
-	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", "start create deployment")
+func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) error {
+	klog.Infof("start create deploy %s", web.Name)
+	deploy := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            web.Name,
+			Namespace:       web.Namespace,
+			Labels:          getLabels(web.GetLabels(), web.Name),
+			Annotations:     web.GetAnnotations(),
+			OwnerReferences: ownerReference(web),
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: web.Spec.Replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: getLabels(web.GetLabels(), web.Name),
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: getLabels(web.GetLabels(), web.Name),
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  web.Name,
+							Image: web.Spec.Image,
+							// ImagePullPolicy: corev1.PullPolicy(web.Spec.ImagePullPolicy),
+							// Env:       web.Spec.Envs,
+							// Resources: web.Spec.Resources,
+						},
+					},
+				},
+			},
+		},
+	}
+	if err := r.Client.Create(ctx, deploy); err != nil {
+		return err
+	}
+	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", fmt.Sprintf("create deployment %s", deploy.Name))
 	return nil
 }
 
-func (r *WebReconciler) updateDeploy(web *appsv1beta1.Web) error {
+func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) error {
 	klog.Info("update deploy")
 	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "update", "start update deployment")
 	return nil
+}
+
+func (r *WebReconciler) syncService(ctx context.Context, web *appsv1beta1.Web) error {
+	klog.Info("sync Service")
+	clean := false
+	if len(web.Spec.Service.Ports) == 0 {
+		clean = true
+	}
+	if clean {
+		klog.Info("clean service & ingress")
+		// 清理service & ingress
+		if err := r.cleanService(ctx, web); err != nil {
+			r.eventRecorder.Eventf(web, corev1.EventTypeWarning, "delete", fmt.Sprintf("clean service failed, err: %v", err))
+			return err
+		}
+		if err := r.cleanIngress(ctx, web); err != nil {
+			r.eventRecorder.Eventf(web, corev1.EventTypeWarning, "delete", fmt.Sprintf("clean ingress failed, err: %v", err))
+			return err
+		}
+		return nil
+	}
+	if err := r.createService(ctx, web); err != nil {
+		r.eventRecorder.Eventf(web, corev1.EventTypeWarning, "create", fmt.Sprintf("create service failed, err: %v", err))
+		return err
+	}
+	if len(web.Spec.Ingress.Hostname) == 0 {
+		klog.Info("clean ingress")
+		if err := r.cleanIngress(ctx, web); err != nil {
+			r.eventRecorder.Eventf(web, corev1.EventTypeWarning, "delete", fmt.Sprintf("clean ingress failed, err: %v", err))
+			return err
+		}
+		return nil
+	}
+	if err := r.createIngress(ctx, web); err != nil {
+		r.eventRecorder.Eventf(web, corev1.EventTypeWarning, "create", fmt.Sprintf("create ingress failed, err: %v", err))
+		return err
+	}
+	return nil
+}
+
+func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web) error {
+	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
+	var ports []corev1.ServicePort
+	for _, i := range web.Spec.Service.Ports {
+		ports = append(ports, corev1.ServicePort{
+			Name: i.Name,
+			Port: i.Port,
+			TargetPort: intstr.IntOrString{
+				Type:   intstr.Type(0),
+				IntVal: i.Port,
+			},
+			Protocol: portProtocol(i.Protocol),
+		})
+	}
+	ingress := &networkingv1.Ingress{
+		TypeMeta: metav1.TypeMeta{Kind: "Ingress", APIVersion: "networking.k8s.io/v1"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            web.Name,
+			Namespace:       web.Namespace,
+			Labels:          getLabels(web.GetLabels(), web.Name),
+			Annotations:     web.GetAnnotations(),
+			OwnerReferences: ownerReference(web),
+		},
+		Spec: networkingv1.IngressSpec{
+			Rules: []networkingv1.IngressRule{
+				{
+					Host: web.Spec.Ingress.Hostname,
+					IngressRuleValue: networkingv1.IngressRuleValue{
+						HTTP: &networkingv1.HTTPIngressRuleValue{
+							Paths: []networkingv1.HTTPIngressPath{
+								{
+									Path:     "/",
+									PathType: ptrPathType("Prefix"),
+									Backend: networkingv1.IngressBackend{
+										Service: &networkingv1.IngressServiceBackend{
+											Name: web.Name,
+											Port: networkingv1.ServiceBackendPort{
+												Number: web.Spec.Ingress.Port,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if len(web.Spec.Ingress.Class) > 0 {
+		ingress.Spec.IngressClassName = ptr.StringPtr(web.Spec.Ingress.Class)
+	}
+
+	if len(web.Spec.Ingress.TLSName) > 0 {
+		ingress.Spec.TLS = append(ingress.Spec.TLS, networkingv1.IngressTLS{
+			Hosts:      []string{web.Spec.Ingress.Hostname},
+			SecretName: web.Spec.Ingress.TLSName,
+		})
+	}
+
+	klog.Infof("create ingress %s/%s", web.Name, web.Namespace)
+	if err := r.Client.Get(ctx, objectKey, ingress); err != nil {
+		if errors.IsNotFound(err) {
+			if err = r.Client.Create(ctx, ingress); err != nil {
+				return err
+			}
+			r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", "create ingress done")
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (r *WebReconciler) createService(ctx context.Context, web *appsv1beta1.Web) error {
+	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
+	var ports []corev1.ServicePort
+	for _, i := range web.Spec.Service.Ports {
+		ports = append(ports, corev1.ServicePort{
+			Name: i.Name,
+			Port: i.Port,
+			TargetPort: intstr.IntOrString{
+				Type:   intstr.Type(0),
+				IntVal: i.Port,
+			},
+			Protocol: portProtocol(i.Protocol),
+		})
+	}
+	service := &corev1.Service{
+		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            web.Name,
+			Namespace:       web.Namespace,
+			Labels:          getLabels(web.GetLabels(), web.Name),
+			Annotations:     web.GetAnnotations(),
+			OwnerReferences: ownerReference(web),
+		},
+		Spec: corev1.ServiceSpec{
+			Type:     getServiceType(web.Spec.Service.Type),
+			Selector: getLabels(web.GetLabels(), web.Name),
+		},
+	}
+	service.Spec.Ports = ports
+	klog.Infof("create service %s/%s", web.Name, web.Namespace)
+	if err := r.Client.Get(ctx, objectKey, service); err != nil {
+		if errors.IsNotFound(err) {
+			if err = r.Client.Create(ctx, service); err != nil {
+				return err
+			}
+			r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", "create service done")
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (r *WebReconciler) cleanService(ctx context.Context, web *appsv1beta1.Web) error {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		objKey := client.ObjectKey{
+			Namespace: web.Namespace,
+			Name:      web.Name,
+		}
+		svc := &corev1.Service{}
+		if err := r.Get(ctx, objKey, svc); err != nil {
+			if errors.IsNotFound(err) {
+				return nil
+			}
+			return err
+		}
+		if err := r.Delete(ctx, svc); err != nil {
+			return err
+		}
+		r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "delete", "clean service done")
+		return nil
+	})
+}
+
+func (r *WebReconciler) cleanIngress(ctx context.Context, web *appsv1beta1.Web) error {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		objKey := client.ObjectKey{
+			Namespace: web.Namespace,
+			Name:      web.Name,
+		}
+		ingress := &networkingv1.Ingress{}
+		if err := r.Get(ctx, objKey, ingress); err != nil {
+			if errors.IsNotFound(err) {
+				return nil
+			}
+			return err
+		}
+		if err := r.Delete(ctx, ingress); err != nil {
+			return err
+		}
+		r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "delete", "clean ingress done")
+		return nil
+	})
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -168,4 +416,40 @@ func (r *WebReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&appsv1beta1.Web{}).
 		Complete(r)
+}
+
+func getLabels(old map[string]string, name string) map[string]string {
+	return exmap.MergeLabels(old, map[string]string{"app.ysicing.me/name": name})
+}
+
+func ownerReference(obj metav1.Object) []metav1.OwnerReference {
+	return []metav1.OwnerReference{
+		*metav1.NewControllerRef(obj,
+			schema.GroupVersionKind{
+				Group:   appsv1beta1.SchemeGroupVersion.WithKind("Web").Group,
+				Version: appsv1beta1.SchemeGroupVersion.WithKind("Web").Version,
+				Kind:    appsv1beta1.SchemeGroupVersion.WithKind("Web").Kind,
+			}),
+	}
+}
+
+func portProtocol(p string) corev1.Protocol {
+	if strings.ToLower(p) == "udp" {
+		return corev1.ProtocolUDP
+	}
+	return corev1.ProtocolTCP
+}
+
+func getServiceType(p string) corev1.ServiceType {
+	if strings.ToLower(p) == "lb" || strings.ToLower(p) == "loadbalancer" {
+		return corev1.ServiceTypeLoadBalancer
+	}
+	if strings.ToLower(p) == "node" || strings.ToLower(p) == "nodeport" {
+		return corev1.ServiceTypeNodePort
+	}
+	return corev1.ServiceTypeClusterIP
+}
+
+func ptrPathType(p networkingv1.PathType) *networkingv1.PathType {
+	return &p
 }

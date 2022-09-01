@@ -43,13 +43,23 @@ func (e *deploymentHandler) Create(evt event.CreateEvent, q workqueue.RateLimiti
 		if req == nil {
 			return
 		}
-		klog.V(4).Infof("Deployment %s/%s created, owner: %s", deploy.Namespace, deploy.Name)
+		klog.Infof("Deployment %s/%s created, owner: %s", deploy.Namespace, deploy.Name, req.Name)
 		q.AddAfter(*req, initialingRateLimiter.When(req))
 		return
 	}
 }
 
-func (e *deploymentHandler) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {}
+func (e *deploymentHandler) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+	oldDeploy := evt.ObjectOld.(*appsv1.Deployment)
+	curDeploy := evt.ObjectNew.(*appsv1.Deployment)
+	if curDeploy.ResourceVersion == oldDeploy.ResourceVersion {
+		return
+	}
+	if curDeploy.DeletionTimestamp != nil {
+		e.Delete(event.DeleteEvent{Object: evt.ObjectNew}, q)
+		return
+	}
+}
 
 func (e *deploymentHandler) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {}
 

@@ -24,6 +24,7 @@ type WebSpec struct {
 	Envs    []corev1.EnvVar `json:"envs,omitempty"`
 	Volume  Volume          `json:"volume,omitempty"`
 	Service Service         `json:"service,omitempty"`
+	Ingress Ingress         `json:"ingress,omitempty"`
 }
 
 type Volume struct {
@@ -45,15 +46,15 @@ type Service struct {
 }
 
 type ServicePort struct {
-	Name     string         `json:"name,omitempty"`
-	Port     int32          `json:"port"`
-	Protocol string         `json:"protocol,omitempty"`
-	Ingress  ServiceIngress `json:"ingress,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Port     int32  `json:"port"`
+	Protocol string `json:"protocol,omitempty"`
 }
 
-type ServiceIngress struct {
+type Ingress struct {
 	Class    string `json:"class,omitempty"`
 	Hostname string `json:"hostname"`
+	Port     int32  `json:"port"`
 	TLSName  string `json:"tlsName,omitempty"`
 }
 

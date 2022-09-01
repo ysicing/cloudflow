@@ -5,4 +5,7 @@ metadata:
 spec:
   image: nginx
   replicas: 2
-
+  # service:
+  #   ports:
+  #     - name: http-80
+  #       port: 80

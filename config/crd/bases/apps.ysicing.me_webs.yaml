@@ -143,6 +143,21 @@ spec:
                 type: string
               imagePullPolicy:
                 type: string
+              ingress:
+                properties:
+                  class:
+                    type: string
+                  hostname:
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                  tlsName:
+                    type: string
+                required:
+                - hostname
+                - port
+                type: object
               replicas:
                 format: int32
                 type: integer
@@ -179,17 +194,6 @@ spec:
                   ports:
                     items:
                       properties:
-                        ingress:
-                          properties:
-                            class:
-                              type: string
-                            hostname:
-                              type: string
-                            tlsName:
-                              type: string
-                          required:
-                          - hostname
-                          type: object
                         name:
                           type: string
                         port:
