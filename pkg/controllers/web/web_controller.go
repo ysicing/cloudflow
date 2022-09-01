@@ -132,7 +132,35 @@ func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		return ctrl.Result{}, nil
 	}
 	klog.Infof("parse web %s", req)
+	deployList := &appsv1.DeploymentList{}
+	err = r.List(ctx, deployList, &client.ListOptions{Namespace: instance.GetNamespace()})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if len(deployList.Items) == 0 {
+		klog.Infof("%s not found deploy, create it", req)
+		if err = r.createDeploy(instance); err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		klog.Infof("%s check deploy, will update", req)
+		if err = r.updateDeploy(instance); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 	return ctrl.Result{}, nil
+}
+
+func (r *WebReconciler) createDeploy(web *appsv1beta1.Web) error {
+	klog.Info("create deploy")
+	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", "start create deployment")
+	return nil
+}
+
+func (r *WebReconciler) updateDeploy(web *appsv1beta1.Web) error {
+	klog.Info("update deploy")
+	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "update", "start update deployment")
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
