@@ -3,4 +3,6 @@ kind: Web
 metadata:
   name: web-sample
 spec:
-  # TODO(user): Add fields here
+  image: nginx
+  replicas: 2
+

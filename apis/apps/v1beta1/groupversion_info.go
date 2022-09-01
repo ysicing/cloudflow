@@ -3,8 +3,8 @@ Copyright 2022 ysicing(i@ysicing.me).
 */
 
 // Package v1beta1 contains API Schema definitions for the apps v1beta1 API group
-//+kubebuilder:object:generate=true
-//+groupName=apps.ysicing.me
+// +kubebuilder:object:generate=true
+// +groupName=apps.ysicing.me
 package v1beta1
 
 import (

@@ -6,17 +6,22 @@ package web
 
 import (
 	"context"
+	"time"
 
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
 	utilclient "github.com/ysicing/cloudflow/pkg/util/client"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/clock"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -59,6 +64,21 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Watch Deployment
+	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &deploymentHandler{Reader: mgr.GetCache()})
+	if err != nil {
+		return err
+	}
+	// Watch Service
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &svcHandler{Reader: mgr.GetCache()})
+	if err != nil {
+		return err
+	}
+	// Watch Ingress
+	err = c.Watch(&source.Kind{Type: &networkingv1.Ingress{}}, &ingressHandler{Reader: mgr.GetCache()})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -85,11 +105,33 @@ type WebReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
-func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
-
-	// TODO(user): your logic here
-
+func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, retErr error) {
+	startTime := time.Now()
+	defer func() {
+		if retErr == nil {
+			if res.Requeue || res.RequeueAfter > 0 {
+				klog.Infof("Finished syncing Web %s, cost %v, result: %v", req, time.Since(startTime), res)
+			} else {
+				klog.Infof("Finished syncing Web %s, cost %v", req, time.Since(startTime))
+			}
+		} else {
+			klog.Errorf("Failed syncing Web %s: %v", req, retErr)
+		}
+	}()
+	// Fetch the Web instance
+	instance := &appsv1beta1.Web{}
+	err := r.Get(context.TODO(), req.NamespacedName, instance)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+		instance = nil
+	}
+	if instance == nil || instance.DeletionTimestamp != nil {
+		klog.V(3).Infof("Web %s has been deleted.", req)
+		return ctrl.Result{}, nil
+	}
+	klog.Infof("parse web %s", req)
 	return ctrl.Result{}, nil
 }
 

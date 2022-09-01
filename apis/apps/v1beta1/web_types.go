@@ -5,6 +5,7 @@ Copyright 2022 ysicing(i@ysicing.me).
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -13,16 +14,16 @@ import (
 
 // WebSpec defines the desired state of Web
 type WebSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Web. Edit web_types.go to remove/update
-	Image           string  `json:"image"`
-	ImagePullPolicy string  `json:"imagePullPolicy,omitempty"`
-	Replicas        int32   `json:"replicas,omitempty"`
-	RestartPolicy   string  `json:"restartPolicy,omitempty"`
-	Volume          Volume  `json:"volume,omitempty"`
-	Service         Service `json:"service,omitempty"`
+	Type            string                      `json:"type,omitempty"`
+	Image           string                      `json:"image"`
+	ImagePullPolicy string                      `json:"imagePullPolicy,omitempty"`
+	Replicas        *int32                      `json:"replicas,omitempty"`
+	RestartPolicy   string                      `json:"restartPolicy,omitempty"`
+	Resources       corev1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	Envs    []corev1.EnvVar `json:"envs,omitempty"`
+	Volume  Volume          `json:"volume,omitempty"`
+	Service Service         `json:"service,omitempty"`
 }
 
 type Volume struct {
