@@ -145,6 +145,8 @@ spec:
                 properties:
                   class:
                     type: string
+                  edns:
+                    type: boolean
                   hostname:
                     type: string
                   port:
@@ -210,6 +212,8 @@ spec:
                 type: object
               volume:
                 properties:
+                  hostpath:
+                    type: string
                   mountPaths:
                     items:
                       properties:
@@ -223,15 +227,10 @@ spec:
                       - mountPath
                       type: object
                     type: array
-                  name:
-                    type: string
-                  path:
-                    type: string
                   type:
                     type: string
                 required:
                 - mountPaths
-                - name
                 - type
                 type: object
             required:

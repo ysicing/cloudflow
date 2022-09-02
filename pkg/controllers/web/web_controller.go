@@ -19,6 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -147,6 +148,9 @@ func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	if err := r.cleanOrCreatePVC(ctx, instance); err != nil {
+		return ctrl.Result{}, err
+	}
 	if len(deployList.Items) == 0 {
 		klog.Infof("%s not found deploy, create it", req)
 		if err = r.createDeploy(ctx, instance); err != nil {
@@ -195,10 +199,10 @@ func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) 
 							ImagePullPolicy: getPullPolicy(web.Spec.PullPolicy),
 							Env:             web.Spec.Envs,
 							Resources:       web.Spec.Resources,
-							VolumeMounts:    getVolumeMounts(web.Spec.Volume),
+							VolumeMounts:    getVolumeMounts(web.Name, web.Spec.Volume),
 						},
 					},
-					Volumes: getVolume(web.Spec.Volume),
+					Volumes: getVolume(web.Name, web.Spec.Volume),
 				},
 			},
 		},
@@ -224,8 +228,8 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) 
 	newContainer.Env = web.Spec.Envs
 	newContainer.ImagePullPolicy = getPullPolicy(web.Spec.PullPolicy)
 	newContainer.Resources = web.Spec.Resources
-	newContainer.VolumeMounts = getVolumeMounts(web.Spec.Volume)
-	newVolume := getVolume(web.Spec.Volume)
+	newContainer.VolumeMounts = getVolumeMounts(web.Name, web.Spec.Volume)
+	newVolume := getVolume(web.Name, web.Spec.Volume)
 	if web.Spec.Replicas == deploy.Spec.Replicas && reflect.DeepEqual(newContainer, deploy.Spec.Template.Spec.Containers[0]) && reflect.DeepEqual(newVolume, deploy.Spec.Template.Spec.Volumes) {
 		return nil
 	}
@@ -237,6 +241,54 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) 
 		return err
 	}
 	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "update", "update deployment done")
+	return nil
+}
+
+func (r *WebReconciler) cleanOrCreatePVC(ctx context.Context, web *appsv1beta1.Web) error {
+	needpvc := false
+	if strings.ToLower(web.Spec.Volume.Type) == "pvc" {
+		needpvc = true
+	}
+	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
+	pvc := &corev1.PersistentVolumeClaim{}
+	if err := r.Get(ctx, objectKey, pvc); err != nil {
+		if errors.IsNotFound(err) {
+			if needpvc {
+				pvc.TypeMeta = metav1.TypeMeta{Kind: "PersistentVolumeClaim", APIVersion: "v1"}
+				pvc.ObjectMeta = metav1.ObjectMeta{
+					Name:            web.Name,
+					Namespace:       web.Namespace,
+					Labels:          getLabels(web.GetLabels(), web.Name),
+					Annotations:     web.GetAnnotations(),
+					OwnerReferences: ownerReference(web),
+				}
+				pvc.Spec = corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{
+						corev1.PersistentVolumeAccessMode("ReadWriteMany"),
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							"storage": *resource.NewQuantity(1073741824, resource.BinarySI), // 1Gi
+						},
+					},
+				}
+				if err := r.Create(ctx, pvc); err != nil {
+					r.eventRecorder.Eventf(web, corev1.EventTypeWarning, "create", fmt.Sprintf("create pvc failed, err: %v", err))
+					return err
+				}
+				r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", fmt.Sprintf("create pvc %s done", web.Name))
+			}
+			return nil
+		}
+		return err
+	}
+	if !needpvc {
+		if err := r.Delete(ctx, pvc); err != nil {
+			r.eventRecorder.Eventf(web, corev1.EventTypeWarning, "delete", fmt.Sprintf("delete pvc failed, err: %v", err))
+			return err
+		}
+		r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "delete", fmt.Sprintf("create pvc %s done", web.Name))
+	}
 	return nil
 }
 
@@ -278,6 +330,14 @@ func (r *WebReconciler) syncService(ctx context.Context, web *appsv1beta1.Web) e
 	return nil
 }
 
+func (r *WebReconciler) getIngressAnnotations(web *appsv1beta1.Web) map[string]string {
+	old := web.GetAnnotations()
+	if web.Spec.Ingress.ExternalDns {
+		return exmap.MergeLabels(old, map[string]string{"external-dns.alpha.kubernetes.io/hostname": web.Spec.Ingress.Hostname})
+	}
+	return old
+}
+
 func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web) error {
 	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
 	ingress := &networkingv1.Ingress{
@@ -286,7 +346,7 @@ func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web)
 			Name:            web.Name,
 			Namespace:       web.Namespace,
 			Labels:          getLabels(web.GetLabels(), web.Name),
-			Annotations:     web.GetAnnotations(),
+			Annotations:     r.getIngressAnnotations(web),
 			OwnerReferences: ownerReference(web),
 		},
 		Spec: networkingv1.IngressSpec{
@@ -479,14 +539,14 @@ func getPullPolicy(t string) corev1.PullPolicy {
 	return corev1.PullAlways
 }
 
-func getVolumeMounts(volume appsv1beta1.Volume) []corev1.VolumeMount {
-	if len(volume.Name) == 0 {
+func getVolumeMounts(name string, volume appsv1beta1.Volume) []corev1.VolumeMount {
+	if len(volume.MountPaths) == 0 {
 		return nil
 	}
 	var vms []corev1.VolumeMount
 	for _, vm := range volume.MountPaths {
 		vms = append(vms, corev1.VolumeMount{
-			Name:      volume.Name,
+			Name:      name,
 			MountPath: vm.MountPath,
 			ReadOnly:  vm.ReadOnly,
 			SubPath:   vm.SubPath,
@@ -495,26 +555,26 @@ func getVolumeMounts(volume appsv1beta1.Volume) []corev1.VolumeMount {
 	return vms
 }
 
-func getVolume(volume appsv1beta1.Volume) []corev1.Volume {
-	if len(volume.Name) == 0 {
+func getVolume(name string, volume appsv1beta1.Volume) []corev1.Volume {
+	if len(volume.MountPaths) == 0 {
 		return nil
 	}
 	var vm corev1.VolumeSource
 	if volume.Type == "nas" || volume.Type == "nfs" || volume.Type == "hostpath" {
 		vm.HostPath = &corev1.HostPathVolumeSource{
-			Path: volume.Path,
+			Path: volume.HostPath,
 			Type: ptrHostPathType(corev1.HostPathDirectoryOrCreate),
 		}
 	} else if volume.Type == "pvc" {
 		vm.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{
-			ClaimName: volume.Name,
+			ClaimName: name,
 		}
 	} else {
 		vm.EmptyDir = &corev1.EmptyDirVolumeSource{}
 	}
 	return []corev1.Volume{
 		{
-			Name:         volume.Name,
+			Name:         name,
 			VolumeSource: vm,
 		},
 	}

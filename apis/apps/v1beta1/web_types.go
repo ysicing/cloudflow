@@ -26,9 +26,8 @@ type WebSpec struct {
 }
 
 type Volume struct {
-	Name       string        `json:"name"`
 	Type       string        `json:"type"`
-	Path       string        `json:"path,omitempty"`
+	HostPath   string        `json:"hostpath,omitempty"`
 	MountPaths []VolumeMount `json:"mountPaths"`
 }
 
@@ -50,10 +49,11 @@ type ServicePort struct {
 }
 
 type Ingress struct {
-	Class    string `json:"class,omitempty"`
-	Hostname string `json:"hostname"`
-	Port     int32  `json:"port"`
-	TLS      string `json:"tls,omitempty"`
+	Class       string `json:"class,omitempty"`
+	Hostname    string `json:"hostname"`
+	Port        int32  `json:"port"`
+	ExternalDns bool   `json:"edns,omitempty"`
+	TLS         string `json:"tls,omitempty"`
 }
 
 // WebStatus defines the observed state of Web
