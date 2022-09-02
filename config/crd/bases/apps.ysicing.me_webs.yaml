@@ -141,8 +141,6 @@ spec:
                 type: array
               image:
                 type: string
-              imagePullPolicy:
-                type: string
               ingress:
                 properties:
                   class:
@@ -158,6 +156,8 @@ spec:
                 - hostname
                 - port
                 type: object
+              pull:
+                type: string
               replicas:
                 format: int32
                 type: integer
