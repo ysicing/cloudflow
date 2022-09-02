@@ -165,7 +165,17 @@ func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 	if err := r.syncService(ctx, instance); err != nil {
 		return ctrl.Result{}, err
 	}
+	if err := r.updateWebStatus(ctx, instance); err != nil {
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
+}
+
+func (r *WebReconciler) updateWebStatus(ctx context.Context, web *appsv1beta1.Web) error {
+	var ws appsv1beta1.WebStatus
+	ws.Ready = true
+	web.Status = ws
+	return r.Status().Update(ctx, web)
 }
 
 func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) error {
