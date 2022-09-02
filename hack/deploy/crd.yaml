@@ -350,6 +350,21 @@ spec:
                 type: string
               imagePullPolicy:
                 type: string
+              ingress:
+                properties:
+                  class:
+                    type: string
+                  hostname:
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                  tls:
+                    type: string
+                required:
+                - hostname
+                - port
+                type: object
               replicas:
                 format: int32
                 type: integer
@@ -375,24 +390,11 @@ spec:
                     description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
-              restartPolicy:
-                type: string
               service:
                 properties:
                   ports:
                     items:
                       properties:
-                        ingress:
-                          properties:
-                            class:
-                              type: string
-                            hostname:
-                              type: string
-                            tlsName:
-                              type: string
-                          required:
-                          - hostname
-                          type: object
                         name:
                           type: string
                         port:
@@ -409,8 +411,6 @@ spec:
                 required:
                 - ports
                 type: object
-              type:
-                type: string
               volume:
                 properties:
                   mountPaths:
@@ -418,13 +418,12 @@ spec:
                       properties:
                         mountPath:
                           type: string
-                        name:
-                          type: string
+                        read:
+                          type: boolean
                         subPath:
                           type: string
                       required:
                       - mountPath
-                      - name
                       type: object
                     type: array
                   name:

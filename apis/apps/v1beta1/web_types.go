@@ -14,12 +14,10 @@ import (
 
 // WebSpec defines the desired state of Web
 type WebSpec struct {
-	Type            string                      `json:"type,omitempty"`
-	Image           string                      `json:"image"`
-	ImagePullPolicy string                      `json:"imagePullPolicy,omitempty"`
-	Replicas        *int32                      `json:"replicas,omitempty"`
-	RestartPolicy   string                      `json:"restartPolicy,omitempty"`
-	Resources       corev1.ResourceRequirements `json:"resources,omitempty"`
+	Image      string                      `json:"image"`
+	PullPolicy string                      `json:"pull,omitempty"`
+	Replicas   *int32                      `json:"replicas,omitempty"`
+	Resources  corev1.ResourceRequirements `json:"resources,omitempty"`
 	// +optional
 	Envs    []corev1.EnvVar `json:"envs,omitempty"`
 	Volume  Volume          `json:"volume,omitempty"`
@@ -35,8 +33,8 @@ type Volume struct {
 }
 
 type VolumeMount struct {
-	Name      string `json:"name"`
 	MountPath string `json:"mountPath"`
+	ReadOnly  bool   `json:"read,omitempty"`
 	SubPath   string `json:"subPath,omitempty"`
 }
 
@@ -55,7 +53,7 @@ type Ingress struct {
 	Class    string `json:"class,omitempty"`
 	Hostname string `json:"hostname"`
 	Port     int32  `json:"port"`
-	TLSName  string `json:"tlsName,omitempty"`
+	TLS      string `json:"tls,omitempty"`
 }
 
 // WebStatus defines the observed state of Web

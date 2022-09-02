@@ -4,8 +4,13 @@ metadata:
   name: web-sample
 spec:
   image: nginx
-  replicas: 2
+  replicas: 1
   # service:
   #   ports:
   #     - name: http-80
   #       port: 80
+  # ingress:
+  #   class: nginx
+  #   hostname: example.com
+  #   port: 80
+  #   tls: ""

@@ -7,6 +7,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -189,13 +190,15 @@ func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) 
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  web.Name,
-							Image: web.Spec.Image,
-							// ImagePullPolicy: corev1.PullPolicy(web.Spec.ImagePullPolicy),
-							// Env:       web.Spec.Envs,
-							// Resources: web.Spec.Resources,
+							Name:            web.Name,
+							Image:           web.Spec.Image,
+							ImagePullPolicy: getPullPolicy(web.Spec.PullPolicy),
+							Env:             web.Spec.Envs,
+							Resources:       web.Spec.Resources,
+							VolumeMounts:    getVolumeMounts(web.Spec.Volume),
 						},
 					},
+					Volumes: getVolume(web.Spec.Volume),
 				},
 			},
 		},
@@ -208,13 +211,37 @@ func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) 
 }
 
 func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) error {
-	klog.Info("update deploy")
-	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "update", "start update deployment")
+	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
+	deploy := &appsv1.Deployment{}
+	if err := r.Client.Get(ctx, objectKey, deploy); err != nil {
+		if errors.IsNotFound(err) {
+			return r.createDeploy(ctx, web)
+		}
+		return err
+	}
+	newContainer := deploy.Spec.Template.Spec.Containers[0]
+	newContainer.Image = web.Spec.Image
+	newContainer.Env = web.Spec.Envs
+	newContainer.ImagePullPolicy = getPullPolicy(web.Spec.PullPolicy)
+	newContainer.Resources = web.Spec.Resources
+	newContainer.VolumeMounts = getVolumeMounts(web.Spec.Volume)
+	newVolume := getVolume(web.Spec.Volume)
+	if web.Spec.Replicas == deploy.Spec.Replicas && reflect.DeepEqual(newContainer, deploy.Spec.Template.Spec.Containers[0]) && reflect.DeepEqual(newVolume, deploy.Spec.Template.Spec.Volumes) {
+		return nil
+	}
+	klog.Infof("update deploy %s", web.Name)
+	deploy.Spec.Replicas = web.Spec.Replicas
+	deploy.Spec.Template.Spec.Volumes = newVolume
+	deploy.Spec.Template.Spec.Containers[0] = newContainer
+	if err := r.Client.Update(ctx, deploy); err != nil {
+		return err
+	}
+	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "update", "update deployment done")
 	return nil
 }
 
 func (r *WebReconciler) syncService(ctx context.Context, web *appsv1beta1.Web) error {
-	klog.Info("sync Service")
+	klog.Infof("sync Service %s", web.Name)
 	clean := false
 	if len(web.Spec.Service.Ports) == 0 {
 		clean = true
@@ -253,18 +280,6 @@ func (r *WebReconciler) syncService(ctx context.Context, web *appsv1beta1.Web) e
 
 func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web) error {
 	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
-	var ports []corev1.ServicePort
-	for _, i := range web.Spec.Service.Ports {
-		ports = append(ports, corev1.ServicePort{
-			Name: i.Name,
-			Port: i.Port,
-			TargetPort: intstr.IntOrString{
-				Type:   intstr.Type(0),
-				IntVal: i.Port,
-			},
-			Protocol: portProtocol(i.Protocol),
-		})
-	}
 	ingress := &networkingv1.Ingress{
 		TypeMeta: metav1.TypeMeta{Kind: "Ingress", APIVersion: "networking.k8s.io/v1"},
 		ObjectMeta: metav1.ObjectMeta{
@@ -305,10 +320,10 @@ func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web)
 		ingress.Spec.IngressClassName = ptr.StringPtr(web.Spec.Ingress.Class)
 	}
 
-	if len(web.Spec.Ingress.TLSName) > 0 {
+	if len(web.Spec.Ingress.TLS) > 0 {
 		ingress.Spec.TLS = append(ingress.Spec.TLS, networkingv1.IngressTLS{
 			Hosts:      []string{web.Spec.Ingress.Hostname},
-			SecretName: web.Spec.Ingress.TLSName,
+			SecretName: web.Spec.Ingress.TLS,
 		})
 	}
 
@@ -451,5 +466,60 @@ func getServiceType(p string) corev1.ServiceType {
 }
 
 func ptrPathType(p networkingv1.PathType) *networkingv1.PathType {
+	return &p
+}
+
+func getPullPolicy(t string) corev1.PullPolicy {
+	if strings.ToLower(t) == "never" {
+		return corev1.PullNever
+	}
+	if strings.ToLower(t) == "ifnotpresent" {
+		return corev1.PullIfNotPresent
+	}
+	return corev1.PullAlways
+}
+
+func getVolumeMounts(volume appsv1beta1.Volume) []corev1.VolumeMount {
+	if len(volume.Name) == 0 {
+		return nil
+	}
+	var vms []corev1.VolumeMount
+	for _, vm := range volume.MountPaths {
+		vms = append(vms, corev1.VolumeMount{
+			Name:      volume.Name,
+			MountPath: vm.MountPath,
+			ReadOnly:  vm.ReadOnly,
+			SubPath:   vm.SubPath,
+		})
+	}
+	return vms
+}
+
+func getVolume(volume appsv1beta1.Volume) []corev1.Volume {
+	if len(volume.Name) == 0 {
+		return nil
+	}
+	var vm corev1.VolumeSource
+	if volume.Type == "nas" || volume.Type == "nfs" || volume.Type == "hostpath" {
+		vm.HostPath = &corev1.HostPathVolumeSource{
+			Path: volume.Path,
+			Type: ptrHostPathType(corev1.HostPathDirectoryOrCreate),
+		}
+	} else if volume.Type == "pvc" {
+		vm.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{
+			ClaimName: volume.Name,
+		}
+	} else {
+		vm.EmptyDir = &corev1.EmptyDirVolumeSource{}
+	}
+	return []corev1.Volume{
+		{
+			Name:         volume.Name,
+			VolumeSource: vm,
+		},
+	}
+}
+
+func ptrHostPathType(p corev1.HostPathType) *corev1.HostPathType {
 	return &p
 }

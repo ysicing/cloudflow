@@ -152,7 +152,7 @@ spec:
                   port:
                     format: int32
                     type: integer
-                  tlsName:
+                  tls:
                     type: string
                 required:
                 - hostname
@@ -187,8 +187,6 @@ spec:
                       to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
-              restartPolicy:
-                type: string
               service:
                 properties:
                   ports:
@@ -210,8 +208,6 @@ spec:
                 required:
                 - ports
                 type: object
-              type:
-                type: string
               volume:
                 properties:
                   mountPaths:
@@ -219,13 +215,12 @@ spec:
                       properties:
                         mountPath:
                           type: string
-                        name:
-                          type: string
+                        read:
+                          type: boolean
                         subPath:
                           type: string
                       required:
                       - mountPath
-                      - name
                       type: object
                     type: array
                   name:
