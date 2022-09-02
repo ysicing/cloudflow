@@ -348,8 +348,6 @@ spec:
                 type: array
               image:
                 type: string
-              imagePullPolicy:
-                type: string
               ingress:
                 properties:
                   class:
@@ -365,6 +363,8 @@ spec:
                 - hostname
                 - port
                 type: object
+              pull:
+                type: string
               replicas:
                 format: int32
                 type: integer
@@ -494,7 +494,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: ghcr.io/ysicing/cloudflow:0.0.1-20220902-e3c7d6d
+      - image: ghcr.io/ysicing/cloudflow:0.0.1-20220902-a4ce8f5
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
