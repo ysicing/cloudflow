@@ -1,0 +1,24 @@
+apiVersion: apps.ysicing.me/v1beta1
+kind: Web
+metadata:
+  name: etcd
+  namespace: cce-system
+spec:
+  image: docker.io/bitnami/etcd:3.5
+  replicas: 1
+  envs:
+    - name: ALLOW_NONE_AUTHENTICATION
+      value: "yes"
+    - name: BITNAMI_DEBUG
+      value: "true"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  volume:
+    mountPaths:
+      - mountPath: /bitnami/etcd
+    type: pvc
+  service:
+    ports:
+    - port: 2379
