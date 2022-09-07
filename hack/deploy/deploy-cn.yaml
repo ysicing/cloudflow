@@ -500,7 +500,8 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: ghcr.io/ysicing/cloudflow:0.0.2-20220907-67d544c
+      - image: ghcr-proxy.hk1.godu.dev/ysicing/cloudflow:0.0.2-20220907-67d544c
+        # args: ["-v", "8"]
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

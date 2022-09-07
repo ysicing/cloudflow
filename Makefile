@@ -110,12 +110,12 @@ build-linux: generate fmt vet ## Build linux manager binary.
 							-X 'k8s.io/client-go/pkg/version.gitTreeState=dirty' \
 							-X 'k8s.io/client-go/pkg/version.buildDate=${BUILD_DATE}' \
 							-X 'k8s.io/client-go/pkg/version.gitMajor=1' \
-							-X 'k8s.io/client-go/pkg/version.gitMinor=23' \
+							-X 'k8s.io/client-go/pkg/version.gitMinor=24' \
 							-X 'k8s.io/component-base/version.gitVersion=${VERSION}' \
 							-X 'k8s.io/component-base/version.gitCommit=${COMMIT_SHA1}' \
 							-X 'k8s.io/component-base/version.gitTreeState=dirty' \
 							-X 'k8s.io/component-base/version.gitMajor=1' \
-							-X 'k8s.io/component-base/version.gitMinor=23' \
+							-X 'k8s.io/component-base/version.gitMinor=24' \
 							-X 'k8s.io/component-base/version.buildDate=${BUILD_DATE}'" \
 							main.go
 
