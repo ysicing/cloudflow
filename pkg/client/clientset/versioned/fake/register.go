@@ -9,8 +9,6 @@ package fake
 
 import (
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
-	jobsv1beta1 "github.com/ysicing/cloudflow/apis/jobs/v1beta1"
-	networkv1beta1 "github.com/ysicing/cloudflow/apis/network/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -23,8 +21,6 @@ var codecs = serializer.NewCodecFactory(scheme)
 
 var localSchemeBuilder = runtime.SchemeBuilder{
 	appsv1beta1.AddToScheme,
-	jobsv1beta1.AddToScheme,
-	networkv1beta1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

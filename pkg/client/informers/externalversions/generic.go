@@ -11,8 +11,6 @@ import (
 	"fmt"
 
 	v1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
-	jobsv1beta1 "github.com/ysicing/cloudflow/apis/jobs/v1beta1"
-	networkv1beta1 "github.com/ysicing/cloudflow/apis/network/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -46,16 +44,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=apps.ysicing.me, Version=v1beta1
 	case v1beta1.SchemeGroupVersion.WithResource("webs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Apps().V1beta1().Webs().Informer()}, nil
-
-		// Group=jobs.ysicing.me, Version=v1beta1
-	case jobsv1beta1.SchemeGroupVersion.WithResource("gentlss"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Jobs().V1beta1().GenTLSs().Informer()}, nil
-	case jobsv1beta1.SchemeGroupVersion.WithResource("initnases"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Jobs().V1beta1().InitNases().Informer()}, nil
-
-		// Group=network.ysicing.me, Version=v1beta1
-	case networkv1beta1.SchemeGroupVersion.WithResource("clusterendpoints"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Network().V1beta1().ClusterEndpoints().Informer()}, nil
 
 	}
 

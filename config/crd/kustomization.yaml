@@ -3,9 +3,6 @@
 # It should be run by config/default
 resources:
 - bases/apps.ysicing.me_webs.yaml
-- bases/jobs.ysicing.me_initnas.yaml
-- bases/jobs.ysicing.me_gentls.yaml
-- bases/network.ysicing.me_clusterendpoints.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

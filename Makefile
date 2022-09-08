@@ -126,7 +126,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 .PHONY: docker-build
 docker-build: build-linux ## Build docker image with the manager.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:${IMG_VERSION}
-	docker build -t ${IMG}:${IMG_VERSION} -f Dockerfile.simple .
+	docker buildx build --pull --platform linux/amd64  -t ${IMG}:${IMG_VERSION} -f Dockerfile.simple .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.

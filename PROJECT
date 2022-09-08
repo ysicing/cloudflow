@@ -14,31 +14,4 @@ resources:
   kind: Web
   path: github.com/ysicing/cloudflow/apis/apps/v1beta1
   version: v1beta1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: ysicing.me
-  group: jobs
-  kind: InitNas
-  path: github.com/ysicing/cloudflow/apis/jobs/v1beta1
-  version: v1beta1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: ysicing.me
-  group: jobs
-  kind: GenTLS
-  path: github.com/ysicing/cloudflow/apis/jobs/v1beta1
-  version: v1beta1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: ysicing.me
-  group: network
-  kind: ClusterEndpoint
-  path: github.com/ysicing/cloudflow/apis/network/v1beta1
-  version: v1beta1
 version: "3"
