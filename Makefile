@@ -5,7 +5,7 @@ COMMIT_SHA1     ?= $(shell git rev-parse --short HEAD || echo "unknown")
 IMG_VERSION ?= ${VERSION}-${BUILD_DATE}-${COMMIT_SHA1}
 
 # Image URL to use all building/pushing image targets
-IMG ?= ghcr.io/ysicing/cloudflow
+IMG ?= ysicing/cloudflow
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
