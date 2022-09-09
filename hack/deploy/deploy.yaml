@@ -263,7 +263,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: ghcr.io/ysicing/cloudflow:0.0.2-20220909-7219ee7
+      - image: ysicing/cloudflow:0.0.2-20220909-1f44413
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
