@@ -54,6 +54,8 @@ type Ingress struct {
 	Port        int32  `json:"port"`
 	ExternalDns bool   `json:"edns,omitempty"`
 	TLS         string `json:"tls,omitempty"`
+	// Whitelist  CIDRs 10.0.0.0/24,172.10.0.1 nginx.ingress.kubernetes.io/whitelist-source-range
+	Whitelist string `json:"whitelist,omitempty"`
 }
 
 // WebStatus defines the observed state of Web

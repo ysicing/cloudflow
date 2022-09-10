@@ -1,16 +1,17 @@
 apiVersion: apps.ysicing.me/v1beta1
 kind: Web
 metadata:
-  name: web-sample
+  name: whoami
+  namespace: cce-system
 spec:
-  image: nginx
-  replicas: 1
-  # service:
-  #   ports:
-  #     - name: http-80
-  #       port: 80
-  # ingress:
-  #   class: nginx
-  #   hostname: example.com
-  #   port: 80
-  #   tls: ""
+  image: ccr.ccs.tencentyun.com/k7scn/whoami:2022
+  replicas: 2
+  service:
+    ports:
+      - name: http-32379
+        port: 32379
+  ingress:
+    class: nginx
+    hostname: whoami.external.ysicing.net
+    port: 32379
+    tls: "tls-ysicing-net"

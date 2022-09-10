@@ -343,7 +343,10 @@ func (r *WebReconciler) syncService(ctx context.Context, web *appsv1beta1.Web) e
 func (r *WebReconciler) getIngressAnnotations(web *appsv1beta1.Web) map[string]string {
 	old := web.GetAnnotations()
 	if web.Spec.Ingress.ExternalDns {
-		return exmap.MergeLabels(old, map[string]string{"external-dns.alpha.kubernetes.io/hostname": web.Spec.Ingress.Hostname})
+		old = exmap.MergeLabels(old, map[string]string{"external-dns.alpha.kubernetes.io/hostname": web.Spec.Ingress.Hostname})
+	}
+	if len(web.Spec.Ingress.Whitelist) > 0 {
+		old = exmap.MergeLabels(old, map[string]string{"nginx.ingress.kubernetes.io/whitelist-source-range": web.Spec.Ingress.Hostname})
 	}
 	return old
 }
