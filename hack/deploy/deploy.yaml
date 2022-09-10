@@ -131,6 +131,9 @@ spec:
                     type: integer
                   tls:
                     type: string
+                  whitelist:
+                    description: Whitelist  CIDRs 10.0.0.0/24,172.10.0.1 nginx.ingress.kubernetes.io/whitelist-source-range
+                    type: string
                 required:
                 - hostname
                 - port
@@ -263,7 +266,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: ysicing/cloudflow:0.0.2-20220909-1f44413
+      - image: ysicing/cloudflow:0.0.3-20220910-07892c1
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
