@@ -128,12 +128,18 @@ docker-build: build-linux ## Build docker image with the manager.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:${IMG_VERSION}
 	docker buildx build --pull --platform linux/amd64  -t ${IMG}:${IMG_VERSION} -f Dockerfile.simple .
 
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
+.PHONY: docker
+docker: docker-build ## docker build & push
 	docker push ${IMG}:${IMG_VERSION}
 
-.PHONY: docker
-docker: docker-build docker-push ## docker build & push
+.PHONY: docker-build-local
+docker-build-local: build-linux ## Build docker image with the manager.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:dev
+	docker buildx build --pull --platform linux/amd64  -t ${IMG}:dev -f Dockerfile.simple .
+
+.PHONY: docker-local
+docker-local: docker-build-local ## docker build & push
+	docker push ${IMG}:dev
 
 ##@ Deployment
 
@@ -163,10 +169,14 @@ genclient: ## Gen Client Code
 	hack/genclient.sh
 
 .PHONY: local
-local: manifests docker ## Run local manager.
+local: manifests docker-local ## Run local manager.
+	$(KUSTOMIZE) build config/default > hack/deploy/dev.yaml
+
+.PHONY: release
+release: manifests docker ## build release.
 	$(KUSTOMIZE) build config/default > hack/deploy/deploy.yaml
 
-local-crd: manifests ## gen crd
+crd: manifests ## gen crd
 	$(KUSTOMIZE) build config/crd > hack/deploy/crd.yaml
 
 ##@ Build Dependencies

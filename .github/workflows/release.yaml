@@ -1,17 +1,17 @@
-name: install
+name: release
 on:
   push:
-    branches:
-      - master
-    paths:
-      - '**.go'
-
+    tags:
+    - 'v*'
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - run: git fetch --prune --prune-tags
+      - run: git tag -l 'v*'
+      - run: ./hack/changelog.sh > CHANGELOG.md
       - name: install kind
         uses: helm/kind-action@v1.3.0
       - name: install kubectl
@@ -21,7 +21,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18.x
+          go-version: 1.19.x
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -43,14 +43,14 @@ jobs:
           make kustomize
           make controller-gen
           make crd
-          make local
+          make release
       - uses: peter-evans/create-pull-request@v4
         with:
-          title: 'feat(update): updated dev yaml'
-          commit-message: 'update dev yaml'
-          branch: create-pull-request/dev
+          title: 'feat(update): updated deploy yaml'
+          commit-message: 'update deploy yaml'
+          branch: create-pull-request/release
           signoff: true
-      - name: Install CloudFlow Operator
+      - name: Install Release Version CloudFlow Operator
         run: |
           kubectl create namespace cce-system
           kubectl apply -f hack/deploy/deploy.yaml
