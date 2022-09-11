@@ -9,9 +9,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - run: git fetch --prune --prune-tags
-      - run: git tag -l 'v*'
-      - run: ./hack/changelog.sh > CHANGELOG.md
       - name: install kind
         uses: helm/kind-action@v1.3.0
       - name: install kubectl
