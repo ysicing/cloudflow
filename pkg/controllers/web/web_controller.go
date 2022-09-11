@@ -194,6 +194,7 @@ func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) 
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: web.Spec.Replicas,
+			Strategy: web.Spec.Schedule.Strategy,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: getLabels(web.GetLabels(), web.Name),
 			},
@@ -212,7 +213,9 @@ func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) 
 							VolumeMounts:    getVolumeMounts(web.Name, web.Spec.Volume),
 						},
 					},
-					Volumes: getVolume(web.Name, web.Spec.Volume),
+					Volumes:      getVolume(web.Name, web.Spec.Volume),
+					NodeSelector: web.Spec.Schedule.NodeSelector,
+					Tolerations:  getTolerations(web.Spec.Schedule),
 				},
 			},
 		},
@@ -247,6 +250,9 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) 
 	deploy.Spec.Replicas = web.Spec.Replicas
 	deploy.Spec.Template.Spec.Volumes = newVolume
 	deploy.Spec.Template.Spec.Containers[0] = newContainer
+	deploy.Spec.Template.Spec.NodeSelector = web.Spec.Schedule.NodeSelector
+	deploy.Spec.Template.Spec.Tolerations = getTolerations(web.Spec.Schedule)
+	deploy.Spec.Strategy = web.Spec.Schedule.Strategy
 	if err := r.Client.Update(ctx, deploy); err != nil {
 		return err
 	}
@@ -593,6 +599,16 @@ func getVolume(name string, volume appsv1beta1.Volume) []corev1.Volume {
 	}
 }
 
+func getTolerations(t appsv1beta1.Schedule) []corev1.Toleration {
+	if t.NodeSelector == nil {
+		return nil
+	}
+	return []corev1.Toleration{
+		{
+			Operator: corev1.TolerationOperator("Exists"),
+		},
+	}
+}
 func ptrHostPathType(p corev1.HostPathType) *corev1.HostPathType {
 	return &p
 }

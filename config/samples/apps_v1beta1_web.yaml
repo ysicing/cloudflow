@@ -5,6 +5,9 @@ metadata:
   namespace: cce-system
 spec:
   image: ccr.ccs.tencentyun.com/k7scn/whoami:2022
+  schedule:
+    nodeSelector:
+      node-role.kubernetes.io/nas: "true"
   replicas: 2
   service:
     ports:

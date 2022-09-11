@@ -5,6 +5,7 @@ Copyright 2022 ysicing(i@ysicing.me).
 package v1beta1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,6 +16,7 @@ import (
 // WebSpec defines the desired state of Web
 type WebSpec struct {
 	Image      string                      `json:"image"`
+	Schedule   Schedule                    `json:"schedule,omitempty"`
 	PullPolicy string                      `json:"pull,omitempty"`
 	Replicas   *int32                      `json:"replicas,omitempty"`
 	Resources  corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -23,6 +25,12 @@ type WebSpec struct {
 	Volume  Volume          `json:"volume,omitempty"`
 	Service Service         `json:"service,omitempty"`
 	Ingress Ingress         `json:"ingress,omitempty"`
+}
+
+type Schedule struct {
+	// NodeSelector select specific nodes
+	NodeSelector map[string]string         `json:"nodeSelector,omitempty"`
+	Strategy     appsv1.DeploymentStrategy `json:"strategy,omitempty"`
 }
 
 type Volume struct {
@@ -45,6 +53,7 @@ type Service struct {
 type ServicePort struct {
 	Name     string `json:"name,omitempty"`
 	Port     int32  `json:"port"`
+	NodePort int32  `json:"nodePort,omitempty"`
 	Protocol string `json:"protocol,omitempty"`
 }
 
@@ -54,7 +63,7 @@ type Ingress struct {
 	Port        int32  `json:"port"`
 	ExternalDns bool   `json:"edns,omitempty"`
 	TLS         string `json:"tls,omitempty"`
-	// Whitelist  CIDRs 10.0.0.0/24,172.10.0.1 nginx.ingress.kubernetes.io/whitelist-source-range
+	// Whitelist  CIDRs 10.0.0.0/24,172.10.0.1
 	Whitelist string `json:"whitelist,omitempty"`
 }
 
