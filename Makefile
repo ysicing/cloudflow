@@ -132,15 +132,6 @@ docker-build: build-linux ## Build docker image with the manager.
 docker: docker-build ## docker build & push
 	docker push ${IMG}:${IMG_VERSION}
 
-.PHONY: docker-build-local
-docker-build-local: build-linux ## Build docker image with the manager.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:dev
-	docker buildx build --pull --platform linux/amd64  -t ${IMG}:dev -f Dockerfile.simple .
-
-.PHONY: docker-local
-docker-local: docker-build-local ## docker build & push
-	docker push ${IMG}:dev
-
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -168,16 +159,13 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 genclient: ## Gen Client Code
 	hack/genclient.sh
 
-.PHONY: local
-local: manifests docker-local ## Run local manager.
-	$(KUSTOMIZE) build config/default > hack/deploy/dev.yaml
-
-.PHONY: release
-release: manifests docker ## build release.
-	$(KUSTOMIZE) build config/default > hack/deploy/deploy.yaml
-
+.PHONY: crd
 crd: manifests ## gen crd
 	$(KUSTOMIZE) build config/crd > hack/deploy/crd.yaml
+
+.PHONY: release
+release: crd docker ## build release.
+	$(KUSTOMIZE) build config/default > hack/deploy/deploy.yaml
 
 ##@ Build Dependencies
 

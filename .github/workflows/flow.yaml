@@ -1,17 +1,25 @@
-name: install
+name: flow
+
 on:
   push:
     branches:
       - master
     paths:
+      - '.github/workflows/**'
       - '**.go'
+    tags:
+      - v*
 
 jobs:
-  test:
+  flow:
+    name: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: master
+          fetch-depth: 0
       - name: install kind
         uses: helm/kind-action@v1.3.0
       - name: install kubectl
@@ -43,7 +51,7 @@ jobs:
           make kustomize
           make controller-gen
           make crd
-          make local
+          make release
       - uses: peter-evans/create-pull-request@v4
         with:
           title: 'feat(update): updated dev yaml'
