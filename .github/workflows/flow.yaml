@@ -55,4 +55,6 @@ jobs:
           kubectl create namespace cce-system
           kubectl apply -f hack/deploy/deploy.yaml
           kubectl get pods -n cce-system
+          kubectl apply -f config/samples/apps_v1beta1_web.yaml
+          kubectl apply -f config/samples/web
 
