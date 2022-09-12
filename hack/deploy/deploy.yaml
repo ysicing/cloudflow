@@ -300,7 +300,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: ysicing/cloudflow:0.0.4-20220911-605cdca
+      - image: ysicing/cloudflow:0.0.4-20220911-d096eed
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -313,12 +313,12 @@ spec:
           httpGet:
             path: /readyz
             port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 15
+          initialDelaySeconds: 5
+          periodSeconds: 10
         resources:
           limits:
             cpu: 500m
-            memory: 128Mi
+            memory: 512Mi
           requests:
             cpu: 10m
             memory: 64Mi
