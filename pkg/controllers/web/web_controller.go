@@ -359,7 +359,8 @@ func (r *WebReconciler) getIngressAnnotations(web *appsv1beta1.Web) map[string]s
 
 func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web) error {
 	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
-	ingress := &networkingv1.Ingress{
+	ingress := &networkingv1.Ingress{}
+	newingress := &networkingv1.Ingress{
 		TypeMeta: metav1.TypeMeta{Kind: "Ingress", APIVersion: "networking.k8s.io/v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            web.Name,
@@ -396,20 +397,20 @@ func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web)
 	}
 
 	if len(web.Spec.Ingress.Class) > 0 {
-		ingress.Spec.IngressClassName = ptr.StringPtr(web.Spec.Ingress.Class)
+		newingress.Spec.IngressClassName = ptr.StringPtr(web.Spec.Ingress.Class)
 	}
 
 	if len(web.Spec.Ingress.TLS) > 0 {
-		ingress.Spec.TLS = append(ingress.Spec.TLS, networkingv1.IngressTLS{
+		newingress.Spec.TLS = append(ingress.Spec.TLS, networkingv1.IngressTLS{
 			Hosts:      []string{web.Spec.Ingress.Hostname},
 			SecretName: web.Spec.Ingress.TLS,
 		})
 	}
 
-	klog.Infof("create ingress %s/%s", web.Name, web.Namespace)
 	if err := r.Client.Get(ctx, objectKey, ingress); err != nil {
 		if errors.IsNotFound(err) {
-			if err = r.Client.Create(ctx, ingress); err != nil {
+			klog.Infof("create ingress %s/%s", web.Name, web.Namespace)
+			if err = r.Client.Create(ctx, newingress); err != nil {
 				return err
 			}
 			r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", "create ingress done")
@@ -417,6 +418,11 @@ func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web)
 		}
 		return err
 	}
+	klog.Infof("update ingress %s/%s", web.Name, web.Namespace)
+	if err := r.Client.Update(ctx, newingress); err != nil {
+		return err
+	}
+	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "update", "update ingress done")
 	return nil
 }
 
@@ -441,7 +447,8 @@ func (r *WebReconciler) createService(ctx context.Context, web *appsv1beta1.Web)
 			Protocol: portProtocol(i.Protocol),
 		})
 	}
-	service := &corev1.Service{
+	service := &corev1.Service{}
+	newservice := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            web.Name,
@@ -455,11 +462,11 @@ func (r *WebReconciler) createService(ctx context.Context, web *appsv1beta1.Web)
 			Selector: getLabels(web.GetLabels(), web.Name),
 		},
 	}
-	service.Spec.Ports = ports
-	klog.Infof("create service %s/%s", web.Name, web.Namespace)
+	newservice.Spec.Ports = ports
 	if err := r.Client.Get(ctx, objectKey, service); err != nil {
 		if errors.IsNotFound(err) {
-			if err = r.Client.Create(ctx, service); err != nil {
+			klog.Infof("create service %s/%s", web.Name, web.Namespace)
+			if err = r.Client.Create(ctx, newservice); err != nil {
 				return err
 			}
 			r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "create", "create service done")
@@ -467,6 +474,11 @@ func (r *WebReconciler) createService(ctx context.Context, web *appsv1beta1.Web)
 		}
 		return err
 	}
+	klog.Infof("update service %s/%s", web.Name, web.Namespace)
+	if err := r.Client.Update(ctx, newservice); err != nil {
+		return err
+	}
+	r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "update", "update service done")
 	return nil
 }
 
