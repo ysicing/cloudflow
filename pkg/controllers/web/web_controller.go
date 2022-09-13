@@ -420,12 +420,19 @@ func (r *WebReconciler) createIngress(ctx context.Context, web *appsv1beta1.Web)
 	return nil
 }
 
+func getPortName(name string, port int32) string {
+	if len(name) > 0 {
+		return name
+	}
+	return fmt.Sprintf("http-%d", port)
+}
+
 func (r *WebReconciler) createService(ctx context.Context, web *appsv1beta1.Web) error {
 	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
 	var ports []corev1.ServicePort
 	for _, i := range web.Spec.Service.Ports {
 		ports = append(ports, corev1.ServicePort{
-			Name: i.Name,
+			Name: getPortName(i.Name, i.Port),
 			Port: i.Port,
 			TargetPort: intstr.IntOrString{
 				Type:   intstr.Type(0),
