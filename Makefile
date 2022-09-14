@@ -1,5 +1,5 @@
 KUBECFG ?= ~/.kube/config
-VERSION ?= 0.0.5
+VERSION ?= 0.0.6
 BUILD_DATE      = $(shell date "+%Y%m%d")
 COMMIT_SHA1     ?= $(shell git rev-parse --short HEAD || echo "unknown")
 IMG_VERSION ?= ${VERSION}-${BUILD_DATE}-${COMMIT_SHA1}

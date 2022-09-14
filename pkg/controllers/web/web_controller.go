@@ -262,7 +262,7 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) 
 
 func (r *WebReconciler) cleanOrCreatePVC(ctx context.Context, web *appsv1beta1.Web) error {
 	needpvc := false
-	if strings.ToLower(web.Spec.Volume.Type) == "pvc" {
+	if web.Spec.Volume.Type == appsv1beta1.PVCVolume {
 		needpvc = true
 	}
 	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName

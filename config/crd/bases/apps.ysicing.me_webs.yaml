@@ -303,7 +303,6 @@ spec:
                     type: string
                 required:
                 - mountPaths
-                - type
                 type: object
             required:
             - image

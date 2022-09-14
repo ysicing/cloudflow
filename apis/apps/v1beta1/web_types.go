@@ -34,10 +34,17 @@ type Schedule struct {
 }
 
 type Volume struct {
-	Type       string        `json:"type"`
+	Type       VolumeType    `json:"type,omitempty"`
 	HostPath   string        `json:"hostpath,omitempty"`
 	MountPaths []VolumeMount `json:"mountPaths"`
 }
+
+type VolumeType string
+
+const (
+	HostVolume VolumeType = "hostpath"
+	PVCVolume  VolumeType = "pvc"
+)
 
 type VolumeMount struct {
 	MountPath string `json:"mountPath"`
