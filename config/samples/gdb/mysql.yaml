@@ -1,0 +1,7 @@
+apiVersion: apps.ysicing.me/v1beta1
+kind: GlobalDB
+metadata:
+  name: mysql
+spec:
+  state: new
+  type: mysql

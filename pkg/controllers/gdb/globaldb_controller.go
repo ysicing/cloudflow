@@ -11,12 +11,15 @@ import (
 	"time"
 
 	"github.com/ergoapi/util/ptr"
+	"github.com/ergoapi/util/ztime"
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
@@ -63,6 +66,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+	err = c.Watch(&source.Kind{Type: &appsv1beta1.Web{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -99,18 +106,20 @@ func (r *GlobalDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		klog.Info("gdb is deleted")
 		return reconcile.Result{}, nil
 	}
-	// TODO if gdb is not exist, we should create it
-	klog.Infof("gdb %s is new will create", gdb.Name)
-	if len(gdb.Spec.Source.Pass) == 0 {
-		// TODO gen password
-		gdb.Spec.Source.Pass = "password"
-	}
-	if isReady, delay := r.getGDBReadyAndDelaytime(gdb); !isReady {
-		klog.Infof("skip for gdb %s has not ready yet.", req.Name)
-		return ctrl.Result{}, nil
-	} else if delay > 0 {
-		klog.Infof("skip for gdb %s waiting for ready %s.", req.Name, delay)
-		return ctrl.Result{RequeueAfter: delay}, nil
+	// if gdb is not exist, we should create it
+	if gdb.Spec.State == "new" {
+		klog.Infof("gdb %s is new will create", gdb.Name)
+		if len(gdb.Spec.Source.Pass) == 0 {
+			// TODO gen password
+			gdb.Spec.Source.Pass = "password"
+		}
+		if isReady, delay := r.getGDBReadyAndDelaytime(gdb); !isReady {
+			klog.Infof("skip for gdb %s has not ready yet.", req.Name)
+			return ctrl.Result{}, nil
+		} else if delay > 0 {
+			klog.Infof("skip for gdb %s waiting for ready %s.", req.Name, delay)
+			return ctrl.Result{RequeueAfter: delay}, nil
+		}
 	}
 	if err := r.updateGDBStatus(gdb); err != nil {
 		return ctrl.Result{}, err
@@ -183,6 +192,14 @@ func (r *GlobalDBReconciler) getGDBReadyAndDelaytime(gdb *appsv1beta1.GlobalDB) 
 	return true, 0
 }
 
+func (r *GlobalDBReconciler) checkStorageClass() bool {
+	sc := &storagev1.StorageClassList{}
+	if err := r.Client.List(context.TODO(), sc); err != nil {
+		return false
+	}
+	return len(sc.Items) == 0
+}
+
 func (r *GlobalDBReconciler) checkOrCreateGDBJob(gdb *appsv1beta1.GlobalDB) (bool, bool, error) {
 	// create gdb job
 	dbmeta := parsedbtype(gdb.Spec.Type, gdb.Spec.Source.Pass)
@@ -192,8 +209,9 @@ func (r *GlobalDBReconciler) checkOrCreateGDBJob(gdb *appsv1beta1.GlobalDB) (boo
 			APIVersion: "apps.ysicing.me/v1beta1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      gdb.Name,
-			Namespace: gdb.Namespace,
+			Name:            gdb.Name,
+			Namespace:       gdb.Namespace,
+			OwnerReferences: ownerReference(gdb),
 		},
 		Spec: appsv1beta1.WebSpec{
 			Image:    dbmeta.Image,
@@ -206,7 +224,6 @@ func (r *GlobalDBReconciler) checkOrCreateGDBJob(gdb *appsv1beta1.GlobalDB) (boo
 			},
 			Envs: dbmeta.Env,
 			Volume: appsv1beta1.Volume{
-				Type: appsv1beta1.PVCVolume,
 				MountPaths: []appsv1beta1.VolumeMount{
 					{
 						MountPath: dbmeta.MountPath,
@@ -221,6 +238,12 @@ func (r *GlobalDBReconciler) checkOrCreateGDBJob(gdb *appsv1beta1.GlobalDB) (boo
 				},
 			},
 		},
+	}
+	if r.checkStorageClass() {
+		gdbJob.Spec.Volume.Type = appsv1beta1.PVCVolume
+	} else {
+		gdbJob.Spec.Volume.Type = appsv1beta1.HostVolume
+		gdbJob.Spec.Volume.HostPath = fmt.Sprintf("/k8sdata/%s/%s/%s", gdb.Namespace, ztime.GetToday(), gdb.Name)
 	}
 	if err := r.Get(context.TODO(), types.NamespacedName{Name: gdb.Name, Namespace: gdb.Namespace}, gdbJob); err != nil {
 		if errors.IsNotFound(err) {
@@ -244,6 +267,17 @@ func (r *GlobalDBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&appsv1beta1.GlobalDB{}).
 		Complete(r)
+}
+
+func ownerReference(obj metav1.Object) []metav1.OwnerReference {
+	return []metav1.OwnerReference{
+		*metav1.NewControllerRef(obj,
+			schema.GroupVersionKind{
+				Group:   appsv1beta1.SchemeGroupVersion.WithKind("Web").Group,
+				Version: appsv1beta1.SchemeGroupVersion.WithKind("Web").Version,
+				Kind:    appsv1beta1.SchemeGroupVersion.WithKind("Web").Kind,
+			}),
+	}
 }
 
 func getGDBJobStatus(status *appsv1beta1.WebStatus) bool {

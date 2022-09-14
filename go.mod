@@ -16,6 +16,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
+require github.com/6tail/lunar-go v1.2.18 // indirect
+
 require (
 	cloud.google.com/go v0.81.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
