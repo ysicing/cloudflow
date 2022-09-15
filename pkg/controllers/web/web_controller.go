@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	concurrentReconciles = 3
+	concurrentReconciles = 1
 )
 
 const (

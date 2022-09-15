@@ -66,7 +66,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	err = c.Watch(&source.Kind{Type: &appsv1beta1.Web{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &appsv1beta1.Web{}}, &webHandler{Reader: mgr.GetCache()})
 	if err != nil {
 		return err
 	}
