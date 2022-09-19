@@ -39,21 +39,21 @@ func (e *webHandler) Create(evt event.CreateEvent, q workqueue.RateLimitingInter
 			return
 		}
 		klog.Infof("Web %s/%s created, owner: %s", web.Namespace, web.Name, req.Name)
-		q.AddAfter(*req, initialingRateLimiter.When(req))
+		// q.AddAfter(*req, initialingRateLimiter.When(req))
 		return
 	}
 }
 
 func (e *webHandler) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
-	oldWeb := evt.ObjectOld.(*appsv1beta1.Web)
-	curWeb := evt.ObjectNew.(*appsv1beta1.Web)
-	if curWeb.ResourceVersion == oldWeb.ResourceVersion {
-		return
-	}
-	if curWeb.DeletionTimestamp != nil {
-		e.Delete(event.DeleteEvent{Object: evt.ObjectNew}, q)
-		return
-	}
+	// oldWeb := evt.ObjectOld.(*appsv1beta1.Web)
+	// curWeb := evt.ObjectNew.(*appsv1beta1.Web)
+	// if curWeb.ResourceVersion == oldWeb.ResourceVersion {
+	// 	return
+	// }
+	// if curWeb.DeletionTimestamp != nil {
+	// 	e.Delete(event.DeleteEvent{Object: evt.ObjectNew}, q)
+	// 	return
+	// }
 }
 
 func (e *webHandler) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {}

@@ -66,10 +66,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	err = c.Watch(&source.Kind{Type: &appsv1beta1.Web{}}, &webHandler{Reader: mgr.GetCache()})
-	if err != nil {
-		return err
-	}
+	// err = c.Watch(&source.Kind{Type: &appsv1beta1.Web{}}, &handler.EnqueueRequestForObject{})
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -124,7 +124,7 @@ func (r *GlobalDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err := r.updateGDBStatus(gdb); err != nil {
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{RequeueAfter: minRequeueDuration}, nil
+	return ctrl.Result{}, nil
 }
 
 func (r *GlobalDBReconciler) updateGDB(gdb *appsv1beta1.GlobalDB, host string) error {
@@ -182,7 +182,7 @@ func (r *GlobalDBReconciler) getGDBReadyAndDelaytime(gdb *appsv1beta1.GlobalDB) 
 			return false, delay
 		}
 	}
-	if err := r.updateGDB(gdb, fmt.Sprintf("%s-mysql.%s.svc", gdb.Name, gdb.Namespace)); err != nil {
+	if err := r.updateGDB(gdb, fmt.Sprintf("%s.%s.svc", gdb.Name, gdb.Namespace)); err != nil {
 		klog.Errorf("update gdb %s status failed for %v", gdb.Name, err)
 		r.EventRecorder.Eventf(gdb, corev1.EventTypeWarning, "UpdateStatusFailed", "Failed to update gdb %s status", gdb.Name)
 	} else {

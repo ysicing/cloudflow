@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ergoapi/util/exmap"
 	"github.com/ergoapi/util/ptr"
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
@@ -75,17 +76,17 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch Deployment
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &deploymentHandler{Reader: mgr.GetCache()})
+	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 	// Watch Service
-	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &svcHandler{Reader: mgr.GetCache()})
+	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 	// Watch Ingress
-	err = c.Watch(&source.Kind{Type: &networkingv1.Ingress{}}, &ingressHandler{Reader: mgr.GetCache()})
+	err = c.Watch(&source.Kind{Type: &networkingv1.Ingress{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -101,10 +102,6 @@ type WebReconciler struct {
 	clock         clock.Clock
 	eventRecorder record.EventRecorder
 }
-
-//+kubebuilder:rbac:groups=apps.ysicing.me,resources=webs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=apps.ysicing.me,resources=webs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=apps.ysicing.me,resources=webs/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -138,27 +135,25 @@ func (r *WebReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ct
 		}
 		instance = nil
 	}
+	// Web 已经被删除
 	if instance == nil || instance.DeletionTimestamp != nil {
 		klog.Infof("Web %s has been deleted.", req)
 		return ctrl.Result{}, nil
 	}
 	klog.Infof("parse web %s", req)
-	deployList := &appsv1.DeploymentList{}
-	err = r.Client.List(ctx, deployList, &client.ListOptions{Namespace: instance.GetNamespace()})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	if err := r.cleanOrCreatePVC(ctx, instance); err != nil {
 		return ctrl.Result{}, err
 	}
-	if len(deployList.Items) == 0 {
-		klog.Infof("%s not found deploy, create it", req)
+	deployRes := &appsv1.Deployment{}
+	if err := r.Client.Get(ctx, req.NamespacedName, deployRes); err != nil {
+		if !errors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
 		if err = r.createDeploy(ctx, instance); err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
-		klog.Infof("%s check deploy, will update", req)
-		if err = r.updateDeploy(ctx, instance); err != nil {
+		if err = r.updateDeploy(ctx, deployRes, instance); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -227,15 +222,9 @@ func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) 
 	return nil
 }
 
-func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) error {
-	objectKey := ctx.Value("request").(ctrl.Request).NamespacedName
-	deploy := &appsv1.Deployment{}
-	if err := r.Client.Get(ctx, objectKey, deploy); err != nil {
-		if errors.IsNotFound(err) {
-			return r.createDeploy(ctx, web)
-		}
-		return err
-	}
+func (r *WebReconciler) updateDeploy(ctx context.Context, deploy *appsv1.Deployment, web *appsv1beta1.Web) error {
+	klog.Infof("%s check deploy, will update", web.Name)
+	olddeploy := *deploy
 	newContainer := deploy.Spec.Template.Spec.Containers[0]
 	newContainer.Image = web.Spec.Image
 	newContainer.Env = web.Spec.Envs
@@ -243,9 +232,11 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) 
 	newContainer.Resources = web.Spec.Resources
 	newContainer.VolumeMounts = getVolumeMounts(web.Name, web.Spec.Volume)
 	newVolume := getVolume(web.Name, web.Spec.Volume)
-	if web.Spec.Replicas == deploy.Spec.Replicas && reflect.DeepEqual(newContainer, deploy.Spec.Template.Spec.Containers[0]) && reflect.DeepEqual(newVolume, deploy.Spec.Template.Spec.Volumes) {
-		return nil
-	}
+
+	spew.Dump(newContainer)
+	spew.Dump(deploy.Spec.Template.Spec.Containers[0])
+	spew.Dump(newVolume)
+	spew.Dump(deploy.Spec.Template.Spec.Volumes)
 	klog.Infof("update deploy %s", web.Name)
 	deploy.Spec.Replicas = web.Spec.Replicas
 	deploy.Spec.Template.Spec.Volumes = newVolume
@@ -253,6 +244,11 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, web *appsv1beta1.Web) 
 	deploy.Spec.Template.Spec.NodeSelector = web.Spec.Schedule.NodeSelector
 	deploy.Spec.Template.Spec.Tolerations = getTolerations(web.Spec.Schedule)
 	deploy.Spec.Strategy = web.Spec.Schedule.Strategy
+	spew.Dump(olddeploy)
+	spew.Dump(deploy)
+	if reflect.DeepEqual(olddeploy, deploy.Spec) {
+		return nil
+	}
 	if err := r.Client.Update(ctx, deploy); err != nil {
 		return err
 	}

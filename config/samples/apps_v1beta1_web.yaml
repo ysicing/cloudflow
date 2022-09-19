@@ -2,7 +2,6 @@ apiVersion: apps.ysicing.me/v1beta1
 kind: Web
 metadata:
   name: whoami
-  namespace: cce-system
 spec:
   image: ccr.ccs.tencentyun.com/k7scn/whoami:2022
   schedule:

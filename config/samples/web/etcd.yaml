@@ -2,7 +2,6 @@ apiVersion: apps.ysicing.me/v1beta1
 kind: Web
 metadata:
   name: etcd
-  namespace: cce-system
 spec:
   image: docker.io/bitnami/etcd:3.5
   replicas: 1
@@ -18,7 +17,7 @@ spec:
   volume:
     mountPaths:
       - mountPath: /bitnami/etcd
-    type: pvc
+    # type: pvc
   service:
     ports:
     - port: 2379
