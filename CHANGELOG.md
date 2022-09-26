@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.0.6 (2022-09-27)
+
+ * [5448a01](https://github.com/ysicing/cloudflow/commit/5448a01e7d46fa268faeb33d68141e523fdbb0a5) feat(update): update
+ * [90fb9e4](https://github.com/ysicing/cloudflow/commit/90fb9e4c65e34d7bbdd52a0671f8d260408a51c3) update dev yaml (#30)
+ * [bcc187c](https://github.com/ysicing/cloudflow/commit/bcc187c29fd4ff9e65cceb5c1906917c68c5b054) feat(update): update
+ * [89e8cc8](https://github.com/ysicing/cloudflow/commit/89e8cc83579e9ccfa87432c0318dfb2ee24f5c60) feat(update): fix typo
+ * [75ed71d](https://github.com/ysicing/cloudflow/commit/75ed71d3bd5f29dce073120ed73c8e8059b41967) update dev yaml (#29)
+ * [9142423](https://github.com/ysicing/cloudflow/commit/914242375627fb7bb4383526bcbb4656a4c3cd99) fix typo
+ * [9471272](https://github.com/ysicing/cloudflow/commit/947127251ad1d13e3828a7703b9a9dedbd62c7b0) update dev yaml (#28)
+ * [2e1943a](https://github.com/ysicing/cloudflow/commit/2e1943ab030955dc6f2ede82547ea7a224146be5) feat(update): update
+ * [53cb3f4](https://github.com/ysicing/cloudflow/commit/53cb3f49e65f777a700c7ff76dcb83862b7a63bc) update dev yaml (#27)
+ * [1b20034](https://github.com/ysicing/cloudflow/commit/1b20034699f4bee3c8c74f99e2019ac12e9ab9cf) fix(update): fix update typo
+ * [b6ad5bd](https://github.com/ysicing/cloudflow/commit/b6ad5bd7c53abca966262374df616875b49ccadc) feat(update): update deploy
+ * [167305a](https://github.com/ysicing/cloudflow/commit/167305ad8f42e58c30f1680cd8bdd472b3e5cd23) fix(svc): fix svc port name
+ * [e06e1c4](https://github.com/ysicing/cloudflow/commit/e06e1c41c92048a4c011a673c521e20434cac552) feat(update): update
+ * [d096eed](https://github.com/ysicing/cloudflow/commit/d096eedcd64b613a482405ebfbc24fcc36baefaa) update dev yaml (#26)
+
+### Contributors
+
+ * github-actions[bot]
+ * ysbot
+ * ysicing
+
 ## v0.0.4 (2022-09-11)
 
  * [605cdca](https://github.com/ysicing/cloudflow/commit/605cdcab4ebca0992453f3e559653d8a5bc17bbb) feat(action): update ci
