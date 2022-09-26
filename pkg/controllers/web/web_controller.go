@@ -7,11 +7,9 @@ package web
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/ergoapi/util/exmap"
 	"github.com/ergoapi/util/ptr"
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
@@ -19,6 +17,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -224,7 +223,6 @@ func (r *WebReconciler) createDeploy(ctx context.Context, web *appsv1beta1.Web) 
 
 func (r *WebReconciler) updateDeploy(ctx context.Context, deploy *appsv1.Deployment, web *appsv1beta1.Web) error {
 	klog.Infof("%s check deploy, will update", web.Name)
-	olddeploy := *deploy
 	newContainer := deploy.Spec.Template.Spec.Containers[0]
 	newContainer.Image = web.Spec.Image
 	newContainer.Env = web.Spec.Envs
@@ -232,11 +230,6 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, deploy *appsv1.Deploym
 	newContainer.Resources = web.Spec.Resources
 	newContainer.VolumeMounts = getVolumeMounts(web.Name, web.Spec.Volume)
 	newVolume := getVolume(web.Name, web.Spec.Volume)
-
-	spew.Dump(newContainer)
-	spew.Dump(deploy.Spec.Template.Spec.Containers[0])
-	spew.Dump(newVolume)
-	spew.Dump(deploy.Spec.Template.Spec.Volumes)
 	klog.Infof("update deploy %s", web.Name)
 	deploy.Spec.Replicas = web.Spec.Replicas
 	deploy.Spec.Template.Spec.Volumes = newVolume
@@ -244,11 +237,6 @@ func (r *WebReconciler) updateDeploy(ctx context.Context, deploy *appsv1.Deploym
 	deploy.Spec.Template.Spec.NodeSelector = web.Spec.Schedule.NodeSelector
 	deploy.Spec.Template.Spec.Tolerations = getTolerations(web.Spec.Schedule)
 	deploy.Spec.Strategy = web.Spec.Schedule.Strategy
-	spew.Dump(olddeploy)
-	spew.Dump(deploy)
-	if reflect.DeepEqual(olddeploy, deploy.Spec) {
-		return nil
-	}
 	if err := r.Client.Update(ctx, deploy); err != nil {
 		return err
 	}
@@ -275,9 +263,7 @@ func (r *WebReconciler) cleanOrCreatePVC(ctx context.Context, web *appsv1beta1.W
 					OwnerReferences: ownerReference(web),
 				}
 				pvc.Spec = corev1.PersistentVolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.PersistentVolumeAccessMode("ReadWriteMany"),
-					},
+					AccessModes: r.fakePVCMode(),
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							"storage": *resource.NewQuantity(1073741824, resource.BinarySI), // 1Gi
@@ -302,6 +288,28 @@ func (r *WebReconciler) cleanOrCreatePVC(ctx context.Context, web *appsv1beta1.W
 		r.eventRecorder.Eventf(web, corev1.EventTypeNormal, "delete", fmt.Sprintf("create pvc %s done", web.Name))
 	}
 	return nil
+}
+
+func (r *WebReconciler) fakePVCMode() []corev1.PersistentVolumeAccessMode {
+	var pvcmode []corev1.PersistentVolumeAccessMode
+	if r.checkLocalPathStorageClass() {
+		return append(pvcmode, corev1.ReadWriteOnce)
+	}
+	return append(pvcmode, corev1.ReadWriteMany)
+}
+
+func (r *WebReconciler) checkLocalPathStorageClass() bool {
+	sc := &storagev1.StorageClassList{}
+	if err := r.Client.List(context.TODO(), sc); err != nil {
+		return false
+	}
+	existlocalpath := false
+	for _, s := range sc.Items {
+		if exmap.GetLabelValue(s.GetAnnotations(), "storageclass.kubernetes.io/is-default-class") == "true" && strings.Contains(s.Provisioner, "local") {
+			existlocalpath = true
+		}
+	}
+	return existlocalpath
 }
 
 func (r *WebReconciler) syncService(ctx context.Context, web *appsv1beta1.Web) error {

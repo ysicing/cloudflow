@@ -86,8 +86,12 @@ spec:
                 type: boolean
               network:
                 type: boolean
+              password:
+                type: string
               ready:
                 type: boolean
+              username:
+                type: string
             required:
             - network
             - ready
@@ -399,7 +403,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: ysicing/cloudflow:0.0.6-20220919-bcc187c
+      - image: ysicing/cloudflow:0.0.6-20220927-90fb9e4
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

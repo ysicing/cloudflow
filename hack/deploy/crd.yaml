@@ -86,8 +86,12 @@ spec:
                 type: boolean
               network:
                 type: boolean
+              password:
+                type: string
               ready:
                 type: boolean
+              username:
+                type: string
             required:
             - network
             - ready

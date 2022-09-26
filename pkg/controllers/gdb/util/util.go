@@ -26,6 +26,10 @@ func (m DBMeta) CheckNetWork() error {
 	return err
 }
 
+func NewMeta(gdb appsv1beta1.GlobalDBSpec) DBMeta {
+	return DBMeta{GlobalDBSpec: gdb}
+}
+
 func NewDB(gdb appsv1beta1.GlobalDBSpec) DB {
 	if gdb.Type == "mysql" {
 		return &MysqlMeta{DBMeta: DBMeta{GlobalDBSpec: gdb}}

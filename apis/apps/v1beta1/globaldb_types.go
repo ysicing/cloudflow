@@ -36,10 +36,12 @@ type Source struct {
 type GlobalDBStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Address string `json:"address,omitempty" yaml:"address,omitempty"`
-	Network bool   `json:"network" yaml:"network"`
-	Auth    bool   `json:"auth,omitempty" yaml:"auth,omitempty"`
-	Ready   bool   `json:"ready" yaml:"ready"`
+	Address  string `json:"address,omitempty" yaml:"address,omitempty"`
+	Network  bool   `json:"network" yaml:"network"`
+	Auth     bool   `json:"auth,omitempty" yaml:"auth,omitempty"`
+	Ready    bool   `json:"ready" yaml:"ready"`
+	Username string `json:"username,omitempty" yaml:"username,omitempty"`
+	Password string `json:"password,omitempty" yaml:"password,omitempty"`
 }
 
 //+genclient

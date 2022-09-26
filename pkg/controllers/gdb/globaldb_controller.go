@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ergoapi/util/expass"
 	"github.com/ergoapi/util/ptr"
 	"github.com/ergoapi/util/ztime"
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
@@ -66,10 +67,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
-	// err = c.Watch(&source.Kind{Type: &appsv1beta1.Web{}}, &handler.EnqueueRequestForObject{})
-	// if err != nil {
-	// 	return err
-	// }
+	err = c.Watch(&source.Kind{Type: &appsv1beta1.Web{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -110,8 +111,7 @@ func (r *GlobalDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if gdb.Spec.State == "new" {
 		klog.Infof("gdb %s is new will create", gdb.Name)
 		if len(gdb.Spec.Source.Pass) == 0 {
-			// TODO gen password
-			gdb.Spec.Source.Pass = "password"
+			gdb.Spec.Source.Pass = expass.PwGenAlphaNum(16)
 		}
 		if isReady, delay := r.getGDBReadyAndDelaytime(gdb); !isReady {
 			klog.Infof("skip for gdb %s has not ready yet.", req.Name)
@@ -140,29 +140,18 @@ func (r *GlobalDBReconciler) updateGDBStatus(gdb *appsv1beta1.GlobalDB) error {
 	var gstatus appsv1beta1.GlobalDBStatus
 
 	// check network
-	dbtool := util.NewDB(gdb.Spec)
-	if dbtool == nil {
-		gstatus.Auth = false
+	dbtool := util.NewMeta(gdb.Spec)
+	if err := dbtool.CheckNetWork(); err != nil {
+		gstatus.Network = false
 		gstatus.Ready = false
-		r.EventRecorder.Eventf(gdb, corev1.EventTypeWarning, "NotSupport", "Not NotSupport %v", gdb.Spec.Type)
+		r.EventRecorder.Eventf(gdb, corev1.EventTypeWarning, "NetworkUnreachable", "Failed to conn %s:%v for %v", gdb.Spec.Source.Host, gdb.Spec.Source.Port, err)
 	} else {
-		if err := dbtool.CheckNetWork(); err != nil {
-			gstatus.Network = false
-			gstatus.Ready = false
-			r.EventRecorder.Eventf(gdb, corev1.EventTypeWarning, "NetworkUnreachable", "Failed to conn %s:%v for %v", gdb.Spec.Source.Host, gdb.Spec.Source.Port, err)
-		} else {
-			gstatus.Network = true
-			if err := dbtool.CheckAuth(); err != nil {
-				gstatus.Auth = false
-				gstatus.Ready = false
-				r.EventRecorder.Eventf(gdb, corev1.EventTypeWarning, "AuthFailed", "Failed to auth %s:%v for %v", gdb.Spec.Source.Host, gdb.Spec.Source.Port, err)
-			} else {
-				gstatus.Auth = true
-				gstatus.Ready = true
-				r.EventRecorder.Eventf(gdb, corev1.EventTypeNormal, "Success", "Success to check %s:%v network & auth", gdb.Spec.Source.Host, gdb.Spec.Source.Port)
-			}
-		}
+		gstatus.Network = true
+		gstatus.Ready = true
+		r.EventRecorder.Eventf(gdb, corev1.EventTypeNormal, "Success", "Success to check %s:%v network & auth", gdb.Spec.Source.Host, gdb.Spec.Source.Port)
 	}
+	gstatus.Username = gdb.Spec.Source.User
+	gstatus.Password = gdb.Spec.Source.Pass
 	gstatus.Address = fmt.Sprintf("%s:%d", gdb.Spec.Source.Host, gdb.Spec.Source.Port)
 	gdb.Status = gstatus
 	return r.Status().Update(context.TODO(), gdb)
@@ -197,7 +186,7 @@ func (r *GlobalDBReconciler) checkStorageClass() bool {
 	if err := r.Client.List(context.TODO(), sc); err != nil {
 		return false
 	}
-	return len(sc.Items) == 0
+	return len(sc.Items) > 0
 }
 
 func (r *GlobalDBReconciler) checkOrCreateGDBJob(gdb *appsv1beta1.GlobalDB) (bool, bool, error) {
@@ -218,7 +207,7 @@ func (r *GlobalDBReconciler) checkOrCreateGDBJob(gdb *appsv1beta1.GlobalDB) (boo
 			Replicas: ptr.Int32Ptr(1),
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					"cpu":    *resource.NewQuantity(100, resource.DecimalSI),
+					"cpu":    *resource.NewMilliQuantity(100, resource.DecimalSI),
 					"memory": *resource.NewQuantity(536870912, resource.BinarySI),
 				},
 			},
@@ -273,9 +262,9 @@ func ownerReference(obj metav1.Object) []metav1.OwnerReference {
 	return []metav1.OwnerReference{
 		*metav1.NewControllerRef(obj,
 			schema.GroupVersionKind{
-				Group:   appsv1beta1.SchemeGroupVersion.WithKind("Web").Group,
-				Version: appsv1beta1.SchemeGroupVersion.WithKind("Web").Version,
-				Kind:    appsv1beta1.SchemeGroupVersion.WithKind("Web").Kind,
+				Group:   appsv1beta1.SchemeGroupVersion.WithKind("GlobalDB").Group,
+				Version: appsv1beta1.SchemeGroupVersion.WithKind("GlobalDB").Version,
+				Kind:    appsv1beta1.SchemeGroupVersion.WithKind("GlobalDB").Kind,
 			}),
 	}
 }
