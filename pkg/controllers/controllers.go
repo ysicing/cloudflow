@@ -4,6 +4,7 @@
 package controllers
 
 import (
+	coreapp "github.com/ysicing/cloudflow/pkg/controllers/core"
 	gdbapp "github.com/ysicing/cloudflow/pkg/controllers/gdb"
 	webapp "github.com/ysicing/cloudflow/pkg/controllers/web"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -16,6 +17,7 @@ var controllerAddFuncs []func(manager.Manager) error
 func init() {
 	controllerAddFuncs = append(controllerAddFuncs, webapp.Add)
 	controllerAddFuncs = append(controllerAddFuncs, gdbapp.Add)
+	controllerAddFuncs = append(controllerAddFuncs, coreapp.Add)
 }
 
 func SetupWithManager(m manager.Manager) error {

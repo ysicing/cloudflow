@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: globaldbs.apps.ysicing.me
+  name: globaldbs.apps.ysicing.cloud
 spec:
-  group: apps.ysicing.me
+  group: apps.ysicing.cloud
   names:
     kind: GlobalDB
     listKind: GlobalDBList

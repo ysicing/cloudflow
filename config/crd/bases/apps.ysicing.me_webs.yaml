@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: webs.apps.ysicing.me
+  name: webs.apps.ysicing.cloud
 spec:
-  group: apps.ysicing.me
+  group: apps.ysicing.cloud
   names:
     kind: Web
     listKind: WebList

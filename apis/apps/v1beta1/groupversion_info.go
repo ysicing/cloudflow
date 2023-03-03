@@ -4,7 +4,7 @@ Copyright 2022 ysicing(i@ysicing.me).
 
 // Package v1beta1 contains API Schema definitions for the apps v1beta1 API group
 // +kubebuilder:object:generate=true
-// +groupName=apps.ysicing.me
+// +groupName=apps.ysicing.cloud
 package v1beta1
 
 import (
@@ -14,7 +14,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "apps.ysicing.me", Version: "v1beta1"}
+	GroupVersion = schema.GroupVersion{Group: "apps.ysicing.cloud", Version: "v1beta1"}
 
 	SchemeGroupVersion = GroupVersion
 

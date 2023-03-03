@@ -1,8 +1,9 @@
+// AGPL License
+// Copyright 2022 ysicing(i@ysicing.me).
+
 package gdb
 
 import (
-	"time"
-
 	appsv1beta1 "github.com/ysicing/cloudflow/apis/apps/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -13,12 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-)
-
-var (
-	// initialingRateLimiter calculates the delay duration for existing Pods
-	// triggered Create event when the Informer cache has just synced.
-	initialingRateLimiter = workqueue.NewItemExponentialFailureRateLimiter(3*time.Second, 30*time.Second)
 )
 
 type webHandler struct {

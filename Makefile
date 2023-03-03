@@ -1,5 +1,5 @@
 KUBECFG ?= ~/.kube/config
-VERSION ?= 0.0.6
+VERSION ?= 0.0.7
 BUILD_DATE      = $(shell date "+%Y%m%d")
 COMMIT_SHA1     ?= $(shell git rev-parse --short HEAD || echo "unknown")
 IMG_VERSION ?= ${VERSION}-${BUILD_DATE}-${COMMIT_SHA1}
@@ -181,7 +181,7 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v3.8.7
-CONTROLLER_TOOLS_VERSION ?= v0.9.0
+CONTROLLER_TOOLS_VERSION ?= v0.11.1
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize

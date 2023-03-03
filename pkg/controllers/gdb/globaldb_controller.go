@@ -38,7 +38,6 @@ import (
 const (
 	controllerName             = "globaldb-controller"
 	gdbCreationDelayAfterReady = time.Second * 30
-	minRequeueDuration         = time.Second * 5
 )
 
 func Add(mgr manager.Manager) error {
@@ -195,7 +194,7 @@ func (r *GlobalDBReconciler) checkOrCreateGDBJob(gdb *appsv1beta1.GlobalDB) (boo
 	gdbJob := &appsv1beta1.Web{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Web",
-			APIVersion: "apps.ysicing.me/v1beta1",
+			APIVersion: "apps.ysicing.cloud/v1beta1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            gdb.Name,

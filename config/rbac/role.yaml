@@ -6,7 +6,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - apps.ysicing.me
+  - apps.ysicing.cloud
   resources:
   - webs
   verbs:
@@ -18,13 +18,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - apps.ysicing.me
+  - apps.ysicing.cloud
   resources:
   - webs/finalizers
   verbs:
   - update
 - apiGroups:
-  - apps.ysicing.me
+  - apps.ysicing.cloud
   resources:
   - webs/status
   verbs:

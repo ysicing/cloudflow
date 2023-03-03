@@ -536,7 +536,7 @@ func (r *WebReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func getLabels(old map[string]string, name string) map[string]string {
-	return exmap.MergeLabels(old, map[string]string{"app.ysicing.me/name": name})
+	return exmap.MergeLabels(old, map[string]string{"app.ysicing.cloud/name": name})
 }
 
 func ownerReference(obj metav1.Object) []metav1.OwnerReference {
