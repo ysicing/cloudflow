@@ -422,7 +422,7 @@ spec:
         control-plane: controller-manager
     spec:
       containers:
-      - image: ysicing/cloudflow:0.0.7-20230303-2efc1ca
+      - image: ysicing/cloudflow:0.0.7-20230303-cb516a5
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
