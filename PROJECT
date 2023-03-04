@@ -2,7 +2,7 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: ysicing.me
+domain: ysicing.cloud
 layout:
 - go.kubebuilder.io/v3
 multigroup: true
@@ -13,7 +13,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: ysicing.me
+  domain: ysicing.cloud
   group: apps
   kind: Web
   path: github.com/ysicing/cloudflow/apis/apps/v1beta1
@@ -22,7 +22,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: ysicing.me
+  domain: ysicing.cloud
   group: apps
   kind: GlobalDB
   path: github.com/ysicing/cloudflow/apis/apps/v1beta1

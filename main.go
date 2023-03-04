@@ -6,6 +6,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 
+	"github.com/ergoapi/util/version"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -70,6 +72,8 @@ func main() {
 		}()
 	}
 
+	setupLog.Info(fmt.Sprintf("version: %s", version.GetVersion()))
+
 	ctx := ctrl.SetupSignalHandler()
 	cfg := ctrl.GetConfigOrDie()
 	setRestConfig(cfg)
@@ -82,7 +86,7 @@ func main() {
 		Port:                    9443,
 		LeaderElection:          enableLeaderElection,
 		LeaderElectionNamespace: "kube-system",
-		LeaderElectionID:        "bf4a3f76.ysicing.me",
+		LeaderElectionID:        "kubeapi.ysicing.cloud",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly

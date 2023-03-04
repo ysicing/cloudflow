@@ -20,16 +20,16 @@ COPY apis/ apis/
 
 COPY pkg/ pkg/
 
-COPY version/ version/
+COPY Makefile Makefile
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o cloudflow main.go
+RUN make build-only
 
 FROM ysicing/debian
 
 WORKDIR /
 
-COPY --from=builder /workspace/cloudflow .
+COPY --from=builder /workspace/bin/cloudflow .
 
 USER 65532:65532
 

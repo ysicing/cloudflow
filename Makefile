@@ -1,6 +1,7 @@
 KUBECFG ?= ~/.kube/config
 VERSION ?= 0.0.7
 BUILD_DATE      = $(shell date "+%Y%m%d")
+GIT_BRANCH ?= $(shell git branch 2>/dev/null | sed -n '/^\*/s/^\* //p')
 COMMIT_SHA1     ?= $(shell git rev-parse --short HEAD || echo "unknown")
 IMG_VERSION ?= ${VERSION}-${BUILD_DATE}-${COMMIT_SHA1}
 
@@ -80,31 +81,43 @@ test: manifests generate fmt vet envtest ## Run tests.
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
+build: generate fmt vet build-only ## Build manager binary.
+
+build-only: ## Build manager binary only.
 	go build -a -o bin/cloudflow  -ldflags   "-w -s \
-							-X 'github.com/ysicing/cloudflow/version.Version=${VERSION}' \
-							-X 'github.com/ysicing/cloudflow/version.BuildDate=${BUILD_DATE}' \
-							-X 'github.com/ysicing/cloudflow/version.GitCommitHash=${COMMIT_SHA1}' \
+							-X github.com/ergoapi/util/version.release=$(IMG_VERSION) \
+							-X github.com/ergoapi/util/version.gitVersion=$(VERSION) \
+							-X github.com/ergoapi/util/version.gitCommit=$(COMMIT_SHA1) \
+							-X github.com/ergoapi/util/version.gitBranch=$(GIT_BRANCH) \
+							-X github.com/ergoapi/util/version.buildDate=$(BUILD_DATE) \
+							-X github.com/ergoapi/util/version.gitTreeState=core \
+							-X github.com/ergoapi/util/version.gitMajor=1 \
+							-X github.com/ergoapi/util/version.gitMinor=26 \
 							-X 'k8s.io/client-go/pkg/version.gitVersion=${VERSION}' \
 							-X 'k8s.io/client-go/pkg/version.gitCommit=${COMMIT_SHA1}' \
 							-X 'k8s.io/client-go/pkg/version.gitTreeState=dirty' \
 							-X 'k8s.io/client-go/pkg/version.buildDate=${BUILD_DATE}' \
 							-X 'k8s.io/client-go/pkg/version.gitMajor=1' \
-							-X 'k8s.io/client-go/pkg/version.gitMinor=23' \
+							-X 'k8s.io/client-go/pkg/version.gitMinor=26' \
 							-X 'k8s.io/component-base/version.gitVersion=${VERSION}' \
 							-X 'k8s.io/component-base/version.gitCommit=${COMMIT_SHA1}' \
 							-X 'k8s.io/component-base/version.gitTreeState=dirty' \
 							-X 'k8s.io/component-base/version.gitMajor=1' \
-							-X 'k8s.io/component-base/version.gitMinor=23' \
+							-X 'k8s.io/component-base/version.gitMinor=26' \
 							-X 'k8s.io/component-base/version.buildDate=${BUILD_DATE}'" \
 							main.go
 
 .PHONY: build-linux
 build-linux: generate fmt vet ## Build linux manager binary.
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/cloudflow  -ldflags   "-w -s \
-							-X 'github.com/ysicing/cloudflow/version.Version=${VERSION}' \
-							-X 'github.com/ysicing/cloudflow/version.BuildDate=${BUILD_DATE}' \
-							-X 'github.com/ysicing/cloudflow/version.GitCommitHash=${COMMIT_SHA1}' \
+							-X github.com/ergoapi/util/version.release=$(IMG_VERSION) \
+							-X github.com/ergoapi/util/version.gitVersion=$(VERSION) \
+							-X github.com/ergoapi/util/version.gitCommit=$(COMMIT_SHA1) \
+							-X github.com/ergoapi/util/version.gitBranch=$(GIT_BRANCH) \
+							-X github.com/ergoapi/util/version.buildDate=$(BUILD_DATE) \
+							-X github.com/ergoapi/util/version.gitTreeState=core \
+							-X github.com/ergoapi/util/version.gitMajor=1 \
+							-X github.com/ergoapi/util/version.gitMinor=26 \
 							-X 'k8s.io/client-go/pkg/version.gitVersion=${VERSION}' \
 							-X 'k8s.io/client-go/pkg/version.gitCommit=${COMMIT_SHA1}' \
 							-X 'k8s.io/client-go/pkg/version.gitTreeState=dirty' \
@@ -123,14 +136,10 @@ build-linux: generate fmt vet ## Build linux manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
-.PHONY: docker-build
-docker-build: build-linux ## Build docker image with the manager.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:${IMG_VERSION}
-	docker buildx build --pull --platform linux/amd64  -t ${IMG}:${IMG_VERSION} -f Dockerfile.simple .
-
 .PHONY: docker
-docker: docker-build ## docker build & push
-	docker push ${IMG}:${IMG_VERSION}
+docker: ## Build docker image with the manager.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}:${IMG_VERSION}
+	docker buildx build --pull --push --platform linux/amd64 -t ${IMG}:${IMG_VERSION} -f Dockerfile .
 
 ##@ Deployment
 
