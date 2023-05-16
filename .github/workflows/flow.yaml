@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: install kind
-        uses: helm/kind-action@v1.4.0
+        uses: helm/kind-action@v1.6.0
       - name: install kubectl
         uses: azure/setup-kubectl@v3.2
       - name: install helm
